@@ -1,5 +1,9 @@
 import pygame
 import sys
+
+# Initialize Pygame
+pygame.init()
+
 from settings import *
 from player import Player
 from enemy import spawn_enemy, draw_enemies, move_enemies, enemies
@@ -7,15 +11,21 @@ from projectile import draw_projectiles, move_projectiles, fire_projectile, proj
 from xp import draw_xp_drops, xp_drops
 from utils import check_player_collisions, check_projectile_collisions
 
-# Initialize Pygame
-pygame.init()
+# Load fonts (now only in main.py)
+font_title = pygame.font.Font(pygame.font.match_font('arial'), 50)
+font_button = pygame.font.Font(pygame.font.match_font('arial'), 30)
+font_credit = pygame.font.Font(pygame.font.match_font('arial'), 20)
+font_health = pygame.font.Font(pygame.font.match_font('arial'), 25)
+font_score = pygame.font.Font(pygame.font.match_font('arial'), 25)
+
+# Set up the display
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Vampyre Survivors Game")
 
 def main_menu():
     running = True
     while running:
-        screen.fill(BLACK)
+        screen.fill(BLACK)  # Fill screen with black for the menu
         # Draw title and credits
         title_text = font_title.render("Vampyre Survivors", True, WHITE)
         credit_text = font_credit.render("Created by Peter Spore PS Copenhagen Origami Bags", True, WHITE)
@@ -49,12 +59,16 @@ def game_loop():
 
     running = True
     while running:
+        # Fill screen with a solid color (e.g., GRAY) as background
         screen.fill(GRAY)
+
+        # Event handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
+        # Update player, enemies, projectiles, and other game elements
         player.move()
         if pygame.time.get_ticks() - player.last_shot_time > fire_rate:
             fire_projectile(player)
@@ -66,9 +80,11 @@ def game_loop():
             spawn_enemy()
             frame_count = 0
 
-        # Update and draw entities
+        # Move projectiles and enemies
         move_projectiles()
         move_enemies(player.x, player.y)
+
+        # Check for collisions
         check_projectile_collisions(player)
         if check_player_collisions(player):
             player.health -= 1
@@ -76,15 +92,18 @@ def game_loop():
                 print("Game Over")
                 running = False
 
+        # Draw game elements
         player.draw(screen)
+        player.draw_health(screen)  # Call draw_health to display health
+        player.draw_score(screen)
+        player.draw_xp(screen)
         draw_projectiles(screen)
         draw_enemies(screen)
         draw_xp_drops(screen, player)
-        player.draw_score(screen)
-        player.draw_xp(screen)
 
         pygame.display.flip()
         clock.tick(60)
+
 
 # Run the menu
 main_menu()

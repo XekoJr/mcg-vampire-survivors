@@ -1,12 +1,12 @@
 import pygame
-from settings import *
+from settings import WIDTH, HEIGHT, WHITE, BLUE, font_health, font_score
 
 class Player:
     def __init__(self):
         self.x = WIDTH // 2
         self.y = HEIGHT // 2
         self.size = 50
-        self.speed = player_speed
+        self.speed = 2
         self.health = 3
         self.xp = 0
         self.last_shot_time = 0
@@ -27,8 +27,9 @@ class Player:
         pygame.draw.rect(screen, BLUE, (self.x, self.y, self.size, self.size))
 
     def draw_health(self, screen):
+        # Render health text
         health_text = font_health.render(f"Health: {self.health}", True, WHITE)
-        screen.blit(health_text, (10, 10))
+        screen.blit(health_text, (10, 10))  # Display at the top-left corner
 
     def draw_score(self, screen):
         score_text = font_score.render(f"Score: {self.score}", True, WHITE)
