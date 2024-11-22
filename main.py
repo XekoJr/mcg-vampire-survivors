@@ -13,7 +13,6 @@ from utils import check_player_collisions, check_projectile_collisions
 
 # Set up the display
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Vampyre Survivors Game")
 
 # Load and scale background image with error handling
 try:
@@ -33,7 +32,7 @@ font_score = pygame.font.Font(pygame.font.match_font('arial'), 25)
 # Button setup
 button_width, button_height = 200, 50
 button_x = (WIDTH - button_width) // 2
-button_y = HEIGHT // 2 + 100  # Adjusted position for the "Start Game" button
+button_y = HEIGHT // 2 -175  # Adjusted position for the "Start Game" button
 
 def main_menu():
     running = True
@@ -43,12 +42,6 @@ def main_menu():
             screen.blit(menu_background, (0, 0))
         else:
             screen.fill(BLACK)  # Fallback to solid color if background fails to load
-
-        # Draw title and credits
-        title_text = font_title.render("Vampyre Survivors", True, WHITE)
-        credit_text = font_credit.render("Created by Peter Spore PS Copenhagen Origami Bags", True, WHITE)
-        screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, 100))
-        screen.blit(credit_text, (WIDTH // 2 - credit_text.get_width() // 2, HEIGHT - 50))
 
         # Draw Start button
         mouse_x, mouse_y = pygame.mouse.get_pos()
