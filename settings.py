@@ -5,6 +5,10 @@ import pygame  # Import pygame to define fonts and colors
 # Screen dimensions
 WIDTH, HEIGHT = 800, 600
 
+# Game world size (map limits)
+MAP_WIDTH = 1920
+MAP_HEIGHT = 1080
+
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)

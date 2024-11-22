@@ -8,7 +8,7 @@ from settings import *
 from player import Player
 from enemy import spawn_enemy, draw_enemies, move_enemies, enemies
 from projectile import draw_projectiles, move_projectiles, fire_projectile, projectiles
-from xp import draw_xp_drops, xp_drops
+from xp import draw_xp_drops, xp_drops, xp_size
 from utils import check_player_collisions, check_projectile_collisions
 
 # Set up the display
@@ -67,6 +67,13 @@ def main_menu():
         pygame.display.flip()
 
     game_loop()
+
+# Calculates the camera offset to center the player within the display.
+def get_camera_offset(player):
+    offset_x = max(0, min(player.x - WIDTH // 2, MAP_WIDTH - WIDTH))
+    offset_y = max(0, min(player.y - HEIGHT // 2, MAP_HEIGHT - HEIGHT))
+    return offset_x, offset_y
+
     
 def game_over_screen(final_score):
     running = True
@@ -111,7 +118,6 @@ def game_over_screen(final_score):
 
         pygame.display.flip()
 
-
 def game_loop():
     clock = pygame.time.Clock()
     player = Player()
@@ -119,11 +125,16 @@ def game_loop():
 
     running = True
     while running:
-        # Draw the background image if loaded successfully
+        # Calculate the camera offset
+        camera_x, camera_y = get_camera_offset(player)
+
+        # Draw the background
         if background:
-            screen.blit(background, (0, 0))
+            for x in range(0, MAP_WIDTH, background.get_width()):
+                for y in range(0, MAP_HEIGHT, background.get_height()):
+                    screen.blit(background, (x - camera_x, y - camera_y))
         else:
-            screen.fill(GRAY) 
+            screen.fill(GRAY)
 
         # Event handling
         for event in pygame.event.get():
@@ -131,38 +142,37 @@ def game_loop():
                 pygame.quit()
                 sys.exit()
 
-        # Update player, enemies, projectiles, and other game elements
+        # Update game elements
         player.move()
         if pygame.time.get_ticks() - player.last_shot_time > fire_rate:
-            fire_projectile(player)
+            fire_projectile(player, camera_x, camera_y)
             player.last_shot_time = pygame.time.get_ticks()
 
-        # Spawn enemies
         frame_count += 1
         if frame_count >= enemy_spawn_rate:
             spawn_enemy()
             frame_count = 0
 
-        # Move projectiles and enemies
         move_projectiles()
         move_enemies(player.x, player.y)
 
-        # Check for collisions
         check_projectile_collisions(player)
         if check_player_collisions(player):
             player.health -= 1
             if player.health <= 0:
-                game_over_screen(player.score)  # Show game over screen with the final score
-                return  # Exit the game loop after game over screen
+                game_over_screen(player.score)
+                return
 
-        # Draw game elements
-        player.draw(screen)
+        # Draw game elements relative to the camera offset
+        player.draw_with_offset(screen, camera_x, camera_y)
+        draw_projectiles(screen, camera_x, camera_y)
+        draw_enemies(screen, camera_x, camera_y)
+        draw_xp_drops(screen, player, camera_x, camera_y)
+
+        # Draw HUD elements
         player.draw_health(screen)
         player.draw_score(screen)
         player.draw_xp(screen)
-        draw_projectiles(screen)
-        draw_enemies(screen)
-        draw_xp_drops(screen, player)
 
         pygame.display.flip()
         clock.tick(60)
