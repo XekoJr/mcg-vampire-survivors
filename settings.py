@@ -27,7 +27,7 @@ button_y = HEIGHT // 2
 # Game settings
 player_speed = 2
 projectile_speed = 7
-fire_rate = 20
+fire_rate = 1000
 enemy_spawn_rate = 30
 xp_value = 5  # XP points per drop
 

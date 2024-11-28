@@ -16,7 +16,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 # Load and scale background image with error handling
 try:
-    menu_background = pygame.image.load("gameart-cover.jpg")  # Replace with your file path
+    menu_background = pygame.image.load("./images/background/gameart-cover.jpg")  # Replace with your file path
     menu_background = pygame.transform.scale(menu_background, (WIDTH, HEIGHT))  # Scale to fit the screen
 except pygame.error as e:
     print("Error loading menu background image:", e)
@@ -35,6 +35,9 @@ button_x = (WIDTH - button_width) // 2
 button_y = HEIGHT // 2 -175  # Adjusted position for the "Start Game" button
 
 def main_menu():
+    player = Player()  # Create a new player instance
+    reset_game(player)  # Reset game state
+
     running = True
     while running:
         # Draw the menu background if loaded
@@ -61,7 +64,7 @@ def main_menu():
 
         pygame.display.flip()
 
-    game_loop()
+    game_loop(player)
 
 def get_camera_offset(player):
     offset_x = max(0, min(player.x - WIDTH // 2, MAP_WIDTH - WIDTH))
@@ -69,6 +72,9 @@ def get_camera_offset(player):
     return offset_x, offset_y
 
 def game_over_screen(final_score):
+    player = Player()  # Create a new player instance
+    reset_game(player)  # Reset game state
+
     running = True
     while running:
         screen.fill(BLACK)
@@ -96,23 +102,98 @@ def game_over_screen(final_score):
         menu_text = font_button.render("Main Menu", True, WHITE)
         screen.blit(menu_text, (WIDTH // 2 - menu_text.get_width() // 2, HEIGHT // 2 + 80))
 
-        # Event Handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if WIDTH // 2 - 100 < mouse_x < WIDTH // 2 + 100 and HEIGHT // 2 < mouse_y < HEIGHT // 2 + 50:
-                    game_loop()
+                    game_loop(player)  # Restart the game
                 if WIDTH // 2 - 100 < mouse_x < WIDTH // 2 + 100 and HEIGHT // 2 + 70 < mouse_y < HEIGHT // 2 + 120:
-                    main_menu()
+                    main_menu()  # Return to main menu
 
         pygame.display.flip()
 
-def game_loop():
+def reset_game(player):
+    """Resets all game state for a fresh start."""
+    global enemies, xp_drops, projectiles  # Access global game objects
+    enemies.clear()  # Clear all enemies
+    xp_drops.clear()  # Clear all XP drops
+    projectiles.clear()  # Clear all projectiles
+
+    # Reset the player's state
+    player.x = WIDTH // 2
+    player.y = HEIGHT // 2
+    player.health = 3
+    player.xp = 0
+    player.level = 1
+    player.current_xp = 0
+    player.xp_to_next_level = 50
+    player.last_shot_time = 0
+    player.score = 0
+    player.fire_rate = fire_rate
+    player.projectile_damage = 1
+    player.level_up_pending = False
+
+def level_up_menu(player):
+    """Displays the level-up menu and lets the player choose an upgrade."""
+    running = True
+    while running:
+        # Fill the screen with a solid background
+        screen.fill(BLACK)
+
+        # Draw the menu title
+        title_text = font_title.render("Level Up!", True, WHITE)
+        screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, 100))
+
+        # Define the level-up options
+        options = [
+            {"text": "Increase Fire Rate by 20%", "upgrade": "fire_rate"},
+            {"text": "Increase Damage by 20%", "upgrade": "damage"},
+            {"text": "Restore 1 Health", "upgrade": "health"}
+        ]
+
+        # Render the options as buttons
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        for i, option in enumerate(options):
+            button_x = WIDTH // 2 - 150
+            button_y = 200 + i * 100
+            button_width = 300
+            button_height = 50
+            is_hovered = button_x < mouse_x < button_x + button_width and button_y < mouse_y < button_y + button_height
+            button_color = DARK_RED if is_hovered else RED
+
+            # Draw the button
+            pygame.draw.rect(screen, button_color, (button_x, button_y, button_width, button_height))
+            option_text = font_button.render(option["text"], True, WHITE)
+            screen.blit(option_text, (
+                button_x + (button_width - option_text.get_width()) // 2,
+                button_y + (button_height - option_text.get_height()) // 2
+            ))
+
+        # Process events for clicks
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # Check if the click is inside any button
+                for i, option in enumerate(options):
+                    button_x = WIDTH // 2 - 150
+                    button_y = 200 + i * 100
+                    button_width = 300
+                    button_height = 50
+                    if button_x < mouse_x < button_x + button_width and button_y < mouse_y < button_y + button_height:
+                        player.apply_upgrade(option["upgrade"])  # Apply the selected upgrade
+                        running = False  # Exit the menu
+
+        pygame.display.flip()
+
+def game_loop(player):
     clock = pygame.time.Clock()
-    player = Player()
     frame_count = 0
+
+    reset_game(player)  # Ensure game state is reset at the start of the loop
 
     running = True
     while running:
@@ -126,7 +207,7 @@ def game_loop():
                 sys.exit()
 
         player.move()
-        if pygame.time.get_ticks() - player.last_shot_time > fire_rate:
+        if pygame.time.get_ticks() - player.last_shot_time > player.fire_rate:
             fire_projectile(player, camera_x, camera_y)
             player.last_shot_time = pygame.time.get_ticks()
 
@@ -143,7 +224,14 @@ def game_loop():
             player.health -= 1
             if player.health <= 0:
                 game_over_screen(player.score)
-                return
+                return  # Exit the game loop when the player dies
+
+        if player.level_up_pending:
+            level_up_menu(player)
+            player.level_up_pending = False
+            continue
+
+        player.gain_xp(0)
 
         player.draw_with_offset(screen, camera_x, camera_y)
         draw_projectiles(screen, camera_x, camera_y)

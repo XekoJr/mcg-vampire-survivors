@@ -19,8 +19,8 @@ def draw_xp_drops(screen, player, camera_x, camera_y):
             xp['y'] - camera_y
         ), xp_size // 2)
 
-        # Check if player collects the XP
         if player_rect.colliderect(xp_rect):
-            player.xp += xp_value
+            player.gain_xp(xp_value)
             xp_drops.remove(xp)
+
 

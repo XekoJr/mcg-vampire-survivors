@@ -1,5 +1,5 @@
 - Falta aplicar texturas
-- Implementar sistema de níveis (consoante o xp subir de nível) pacheco
+- Implementar sistema de níveis (consoante o xp subir de nível) pacheco feito!
 - Sistema de hp nos inimigos
 - Meter dano no nosso boneco (barra de dano)
 - Meter o inimigo a disparar contra nós freitas
