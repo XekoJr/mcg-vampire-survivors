@@ -7,7 +7,7 @@ class Player:
         self.y = HEIGHT // 2
         self.size = 50
         self.speed = 2
-        self.health = 3
+        self.health = 100
         self.xp = 0  # Total XP collected
         self.level = 1  # Starting level
         self.current_xp = 0  # XP toward the next level
@@ -18,7 +18,7 @@ class Player:
 
         # Scaling attributes
         self.fire_rate = fire_rate  # Milliseconds between shots
-        self.projectile_damage = 1  # Base projectile damage
+        self.projectile_damage = 10  # Base projectile damage
 
     def move(self):
         """Update player movement while respecting map boundaries."""

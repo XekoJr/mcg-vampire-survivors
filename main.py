@@ -2,14 +2,14 @@ import pygame
 import sys
 import os
 
-pygame.init()  # Initialize Pygame
+pygame.init()
 
 from settings import *
 from player import Player
 from enemy import spawn_enemy, draw_enemies, move_enemies, enemies
 from projectile import draw_projectiles, move_projectiles, fire_projectile, projectiles
 from xp import draw_xp_drops, xp_drops, xp_size
-from utils import check_player_collisions, check_projectile_collisions
+from utils import *
 
 # Set up the display
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -124,7 +124,7 @@ def reset_game(player):
     # Reset the player's state
     player.x = WIDTH // 2
     player.y = HEIGHT // 2
-    player.health = 3
+    player.health = 100
     player.xp = 0
     player.level = 1
     player.current_xp = 0
@@ -134,6 +134,8 @@ def reset_game(player):
     player.fire_rate = fire_rate
     player.projectile_damage = 1
     player.level_up_pending = False
+    player.fire_rate = fire_rate  # Milliseconds between shots
+    player.projectile_damage = 10
 
 def level_up_menu(player):
     """Displays the level-up menu and lets the player choose an upgrade."""
@@ -221,7 +223,7 @@ def game_loop(player):
 
         check_projectile_collisions(player)
         if check_player_collisions(player):
-            player.health -= 1
+            player.health -= 25
             if player.health <= 0:
                 game_over_screen(player.score)
                 return  # Exit the game loop when the player dies
