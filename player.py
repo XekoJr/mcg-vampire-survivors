@@ -1,11 +1,12 @@
 import pygame
+import time
 from settings import *
 
 class Player:
     def __init__(self):
         self.x = WIDTH // 2
         self.y = HEIGHT // 2
-        self.size = 50
+        self.size = 60
         self.speed = 2
         self.health = 100
         self.xp = 0  # Total XP collected
@@ -20,17 +21,49 @@ class Player:
         self.fire_rate = fire_rate  # Milliseconds between shots
         self.projectile_damage = 10  # Base projectile damage
 
+        # Carregar as imagens de movimento do jogador
+        self.player_images = {
+            'down': [pygame.image.load(f'./images/player/down/{i}.png') for i in range(4)],
+            'up': [pygame.image.load(f'./images/player/up/{i}.png') for i in range(4)],
+            'left': [pygame.image.load(f'./images/player/left/{i}.png') for i in range(4)],
+            'right': [pygame.image.load(f'./images/player/right/{i}.png') for i in range(4)],
+        }
+
+        # Redimensionar as imagens para o tamanho desejado
+        self.player_images = {direction: [pygame.transform.scale(image, (self.size, self.size)) for image in images]
+                              for direction, images in self.player_images.items()}
+
+        # Variáveis para controle de animação
+        self.animation_index = 0
+        self.animation_timer = 0  # Timer para controlar a troca das imagens
+
+        # Inicializar a direção do jogador (começa com "down")
+        self.direction = 'down'
+        
+        self.current_image = self.player_images[self.direction][self.animation_index]  # Imagem inicial do jogador
+        self.last_move_time = time.time()  # Controle de tempo para animação
+
+        # Controlar a velocidade da animação em segundos
+        self.animation_speed = 0.2  # Cada 0.2 segundos troca a imagem
+        self.last_animation_time = time.time()  # Marca o tempo da última troca de imagem
+
     def move(self):
         """Update player movement while respecting map boundaries."""
         keys = pygame.key.get_pressed()
+        
+        # Movimentos para cima (up), para baixo (down), para esquerda (left) e para direita (right)
         if keys[pygame.K_w] or keys[pygame.K_UP]:
-            self.y = max(0, self.y - self.speed)  # Top boundary
-        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-            self.y = min(MAP_HEIGHT - self.size, self.y + self.speed)  # Bottom boundary
-        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            self.x = max(0, self.x - self.speed)  # Left boundary
-        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            self.x = min(MAP_WIDTH - self.size, self.x + self.speed)  # Right boundary
+            self.y = max(0, self.y - self.speed)
+            self.direction = 'up'
+        elif keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            self.y = min(MAP_HEIGHT - self.size, self.y + self.speed)
+            self.direction = 'down'
+        elif keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            self.x = max(0, self.x - self.speed)
+            self.direction = 'left'
+        elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            self.x = min(MAP_WIDTH - self.size, self.x + self.speed)
+            self.direction = 'right'
 
     def gain_xp(self, amount):
         """Add XP and handle leveling up."""
@@ -55,7 +88,16 @@ class Player:
             self.health = min(max_health, self.health + 1)
 
     def draw(self, screen):
-        pygame.draw.rect(screen, BLUE, (self.x, self.y, self.size, self.size))
+        """Draw the player's current animation frame on the screen."""
+        current_time = time.time()
+        
+        # A cada self.animation_speed segundos, troca a imagem
+        if current_time - self.last_animation_time >= self.animation_speed:
+            self.animation_index = (self.animation_index + 1) % len(self.player_images[self.direction])
+            self.last_animation_time = current_time  # Atualiza o tempo da última troca de imagem
+
+        # Desenha a imagem do jogador (usando a animação atual e direção)
+        screen.blit(self.player_images[self.direction][self.animation_index], (self.x, self.y))
 
     def draw_health(self, screen):
         health_text = font_health.render(f"Health: {self.health}", True, WHITE)
@@ -72,6 +114,6 @@ class Player:
         screen.blit(xp_text, (10, 40))
         screen.blit(level_text, (10, 70))
 
-
     def draw_with_offset(self, screen, camera_x, camera_y):
-        pygame.draw.rect(screen, BLUE, (self.x - camera_x, self.y - camera_y, self.size, self.size))
+        """Draw player with camera offset."""
+        screen.blit(self.player_images[self.direction][self.animation_index], (self.x - camera_x, self.y - camera_y))
