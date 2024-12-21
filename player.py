@@ -39,6 +39,7 @@ class Player:
 
         # Inicializar a direção do jogador (começa com "down")
         self.direction = 'down'
+        self.animation_index = 0
         
         self.current_image = self.player_images[self.direction][self.animation_index]  # Imagem inicial do jogador
         self.last_move_time = time.time()  # Controle de tempo para animação
@@ -50,20 +51,32 @@ class Player:
     def move(self):
         """Update player movement while respecting map boundaries."""
         keys = pygame.key.get_pressed()
-        
+        moving = False  # Variável para verificar se o jogador está se movendo
+
         # Movimentos para cima (up), para baixo (down), para esquerda (left) e para direita (right)
         if keys[pygame.K_w] or keys[pygame.K_UP]:
             self.y = max(0, self.y - self.speed)
             self.direction = 'up'
+            moving = True
         elif keys[pygame.K_s] or keys[pygame.K_DOWN]:
             self.y = min(MAP_HEIGHT - self.size, self.y + self.speed)
             self.direction = 'down'
+            moving = True
         elif keys[pygame.K_a] or keys[pygame.K_LEFT]:
             self.x = max(0, self.x - self.speed)
             self.direction = 'left'
+            moving = True
         elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             self.x = min(MAP_WIDTH - self.size, self.x + self.speed)
             self.direction = 'right'
+            moving = True
+
+        # Atualizar índice de animação apenas se o jogador estiver a mover-se
+        if moving:
+            current_time = time.time()
+            if current_time - self.last_animation_time >= self.animation_speed:
+                self.animation_index = (self.animation_index + 1) % len(self.player_images[self.direction])
+                self.last_animation_time = current_time
 
     def gain_xp(self, amount):
         """Add XP and handle leveling up."""
@@ -89,14 +102,6 @@ class Player:
 
     def draw(self, screen):
         """Draw the player's current animation frame on the screen."""
-        current_time = time.time()
-        
-        # A cada self.animation_speed segundos, troca a imagem
-        if current_time - self.last_animation_time >= self.animation_speed:
-            self.animation_index = (self.animation_index + 1) % len(self.player_images[self.direction])
-            self.last_animation_time = current_time  # Atualiza o tempo da última troca de imagem
-
-        # Desenha a imagem do jogador (usando a animação atual e direção)
         screen.blit(self.player_images[self.direction][self.animation_index], (self.x, self.y))
 
     def draw_health(self, screen):
