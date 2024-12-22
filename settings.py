@@ -28,10 +28,10 @@ button_y = HEIGHT // 2
 ENEMY_SIZE = (50, 40)  # Width and height of the enemy
 
 # Game settings
-player_speed = 2
-projectile_speed = 7
-fire_rate = 1000
-enemy_spawn_rate = 30
+player_speed = 2 # Speed of the player character
+projectile_speed = 7 # Speed of player projectiles
+fire_rate = 1000 # Milliseconds between shots
+enemy_spawn_rate = 50 # Lower value means faster spawn rate
 xp_value = 5  # XP points per drop
 
 # Font settings (after pygame is initialized in main.py)

@@ -1,3 +1,4 @@
+import random
 import pygame
 from settings import *
 import math
@@ -6,7 +7,6 @@ import math
 projectiles = []
 
 def fire_projectile(player, camera_x, camera_y):
-    """Fire a projectile from the player."""
     mouse_x, mouse_y = pygame.mouse.get_pos()
     dx = mouse_x + camera_x - (player.x + player.size / 2)
     dy = mouse_y + camera_y - (player.y + player.size / 2)
@@ -15,13 +15,16 @@ def fire_projectile(player, camera_x, camera_y):
         dx /= distance
         dy /= distance
 
-    # Add the projectile with the player's damage value
+    is_crit = random.random() < (player.crit_chance / 100)
+    damage = player.projectile_damage * 2 if is_crit else player.projectile_damage
+
     projectiles.append({
         'x': player.x + player.size / 2,
         'y': player.y + player.size / 2,
         'dx': dx,
         'dy': dy,
-        'damage': player.projectile_damage  # Use player's current damage value
+        'damage': damage,
+        'color': RED if is_crit else YELLOW
     })
 
 def move_projectiles():
@@ -39,7 +42,7 @@ def move_projectiles():
 def draw_projectiles(screen, camera_x, camera_y):
     """Draw all projectiles relative to the camera."""
     for projectile in projectiles:
-        pygame.draw.rect(screen, YELLOW, (
+        pygame.draw.rect(screen, projectile['color'], (
             projectile['x'] - camera_x,  # Adjust for camera offset
             projectile['y'] - camera_y,
             10, 10  # Projectile size
