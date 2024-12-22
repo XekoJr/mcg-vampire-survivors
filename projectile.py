@@ -1,10 +1,26 @@
 import random
 import pygame
-from settings import *
 import math
+from settings import *
 
 # List to store active projectiles
 projectiles = []
+
+# Load projectile animations
+try:
+    normal_projectile_frames = [
+        pygame.image.load(f'./assets/images/projectile/normal/{i}.png') for i in range(6)  # Adjust number of frames
+    ]
+    crit_projectile_frames = [
+        pygame.image.load(f'./assets/images/projectile/crit/{i}.png') for i in range(6)  # Adjust number of frames
+    ]
+
+    # Optionally resize frames if needed
+    normal_projectile_frames = [pygame.transform.scale(frame, (60, 25)) for frame in normal_projectile_frames]
+    crit_projectile_frames = [pygame.transform.scale(frame, (60, 25)) for frame in crit_projectile_frames]
+except pygame.error as e:
+    print(f"Error loading projectile frames: {e}")
+    normal_projectile_frames, crit_projectile_frames = [], []
 
 def fire_projectile(player, camera_x, camera_y):
     mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -15,6 +31,9 @@ def fire_projectile(player, camera_x, camera_y):
         dx /= distance
         dy /= distance
 
+    # Calculate the angle of rotation in degrees
+    angle = math.degrees(math.atan2(-dy, dx))  # Negative dy because Pygame's y-axis is flipped
+
     is_crit = random.random() < (player.crit_chance / 100)
     damage = player.projectile_damage * 2 if is_crit else player.projectile_damage
 
@@ -24,7 +43,11 @@ def fire_projectile(player, camera_x, camera_y):
         'dx': dx,
         'dy': dy,
         'damage': damage,
-        'color': RED if is_crit else YELLOW
+        'is_crit': is_crit,
+        'frames': crit_projectile_frames if is_crit else normal_projectile_frames,
+        'frame_index': 0,  # Start at the first frame
+        'last_frame_time': pygame.time.get_ticks(),  # Time to control animation speed
+        'angle': angle  # Store the angle for rotation
     })
 
 def move_projectiles():
@@ -38,12 +61,37 @@ def move_projectiles():
                 projectile['y'] < 0 or projectile['y'] > MAP_HEIGHT):
             projectiles.remove(projectile)
 
-
 def draw_projectiles(screen, camera_x, camera_y):
-    """Draw all projectiles relative to the camera."""
+    """Draw all projectiles with animation and rotation."""
+    current_time = pygame.time.get_ticks()
     for projectile in projectiles:
-        pygame.draw.rect(screen, projectile['color'], (
-            projectile['x'] - camera_x,  # Adjust for camera offset
-            projectile['y'] - camera_y,
-            10, 10  # Projectile size
-        ))
+        frames = projectile['frames']
+        frame_index = projectile['frame_index']
+
+        # Get the current frame
+        if frames:
+            frame = frames[frame_index]
+
+            # Rotate the frame based on the angle
+            rotated_frame = pygame.transform.rotate(frame, projectile['angle'])
+
+            # Get the rect of the rotated image for proper centering
+            frame_rect = rotated_frame.get_rect(center=(
+                projectile['x'] - camera_x,
+                projectile['y'] - camera_y
+            ))
+
+            # Draw the rotated frame
+            screen.blit(rotated_frame, frame_rect.topleft)
+        else:
+            # Fallback if frames are missing
+            pygame.draw.rect(screen, YELLOW if not projectile['is_crit'] else RED, (
+                projectile['x'] - camera_x,
+                projectile['y'] - camera_y,
+                10, 10
+            ))
+
+        # Update animation frame
+        if current_time - projectile['last_frame_time'] > 100:  # 100ms per frame
+            projectile['frame_index'] = (frame_index + 1) % len(frames)
+            projectile['last_frame_time'] = current_time
