@@ -4,7 +4,6 @@ from settings import *
 # XP properties
 xp_width = 10  # Width of the XP
 xp_height = 14  # Height of the XP
-xp_value = 5  # Amount of XP each drop gives
 xp_drops = []  # List to store XP drops
 player_xp = 0  # Initial XP
 
@@ -37,5 +36,7 @@ def draw_xp_drops(screen, player, camera_x, camera_y):
 
         # Check collision with player
         if player_rect.colliderect(xp_rect):
-            player.gain_xp(xp_value)
+            player.gain_xp(xp['value'])  # Add XP based on the value of the drop
             xp_drops.remove(xp)
+            if collect_xp_sound:
+                collect_xp_sound.play()  # Play the XP collection sound

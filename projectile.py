@@ -3,6 +3,8 @@ import pygame
 import math
 from settings import *
 
+pygame.mixer.init()
+
 # List to store active projectiles
 projectiles = []
 

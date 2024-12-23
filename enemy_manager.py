@@ -1,6 +1,6 @@
 import pygame
 from enemies.__init__ import BatEnemy, BlobEnemy, SkeletonEnemy
-from settings import MAP_WIDTH, MAP_HEIGHT
+from settings import MAP_WIDTH, MAP_HEIGHT, normal_hit_sound, crit_hit_sound
 import random
 
 class EnemyManager:
@@ -15,6 +15,9 @@ class EnemyManager:
             2: {"enemies": [(BatEnemy, 3), (SkeletonEnemy, 1)]},  # Bats are more common
             3: {"enemies": [(BatEnemy, 2), (SkeletonEnemy, 2), (BlobEnemy, 1)]},  # More variety
             4: {"enemies": [(BatEnemy, 3), (SkeletonEnemy, 3), (BlobEnemy, 2)]},  # More blobs
+            5: {"enemies": [(BatEnemy, 1), (SkeletonEnemy, 1), (BlobEnemy, 1)]},  # Eazy Boss
+            10: {"enemies": [(BatEnemy, 2), (SkeletonEnemy, 2), (BlobEnemy, 2)]}, # Medium Boss
+            15: {"enemies": [(BatEnemy, 3), (SkeletonEnemy, 3), (BlobEnemy, 3)]}, # Hard Boss
         }
 
     def update_spawn_interval(self, player_level):
@@ -69,10 +72,21 @@ class EnemyManager:
 
             for enemy in self.enemies[:]:
                 if projectile_rect.colliderect(enemy.get_rect()):
+                    # Play the appropriate sound effect
+                    if projectile['is_crit'] and crit_hit_sound:
+                        crit_hit_sound.play()
+                    elif normal_hit_sound:
+                        normal_hit_sound.play()
+
+                    # Handle damage
                     if enemy.take_damage(projectile['damage']):  # Enemy dies
                         self.enemies.remove(enemy)
                         player.score += 10
-                        xp_drops.append({'x': enemy.x, 'y': enemy.y})  # Drop XP
+                        xp_drops.append({
+                            'x': enemy.x, 
+                            'y': enemy.y,
+                            'value': enemy.xp_value  # XP value depends on the enemy
+                            })  # Drop XP
                     projectiles.remove(projectile)
                     break
 
@@ -81,6 +95,8 @@ class EnemyManager:
         player_rect = pygame.Rect(player.x, player.y, player.size, player.size)
         for enemy in self.enemies[:]:
             if player_rect.colliderect(enemy.get_rect()):
-                self.enemies.remove(enemy)
-                return True
-        return False
+                # Apply the enemy's damage to the player
+                player.health -= enemy.damage
+                self.enemies.remove(enemy)  # Remove the enemy after collision
+                return True  # Collision occurred
+        return False  # No collision

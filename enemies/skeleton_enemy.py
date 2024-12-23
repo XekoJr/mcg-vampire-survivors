@@ -13,4 +13,4 @@ class SkeletonEnemy(Enemy):
             pygame.image.load('./assets/images/enemies/skeleton/2.png'),
             pygame.image.load('./assets/images/enemies/skeleton/3.png')
         ]
-        super().__init__(x, y, hp=10, speed=3, size=(50, 50), images=images)
+        super().__init__(x, y, hp=10, speed=3, xp_value=10, damage=25, size=(50, 50), images=images)

@@ -4,12 +4,14 @@ import math
 
 class Enemy:
     """Base class for all enemies."""
-    def __init__(self, x, y, hp, speed, size, images):
+    def __init__(self, x, y, hp, speed, xp_value, damage, size, images):
         self.x = x
         self.y = y
         self.hp = hp
         self.max_hp = hp  # Store the maximum HP for the health ratio
         self.speed = speed
+        self.xp_value = xp_value  # XP value when the enemy dies
+        self.damage =  damage
         self.size = size
         self.images = [pygame.transform.scale(img, self.size) for img in images]
         self.animation_index = 0

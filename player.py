@@ -103,7 +103,7 @@ class Player:
         while self.current_xp >= self.xp_to_next_level:
             self.current_xp -= self.xp_to_next_level
             self.level += 1
-            self.xp_to_next_level = round(self.xp_to_next_level * 1.5)
+            self.xp_to_next_level = round(self.xp_to_next_level * 1.2)
             self.level_up_pending = True  # Set flag to trigger level-up menu
             return True
         return False
@@ -118,6 +118,7 @@ class Player:
             self.health = min(self.max_health, self.health + 50)  # Restore health
         elif upgrade == "max_health":
             self.max_health += 25  # Increase max health
+            self.health = min(self.max_health, self.health + 25)
         elif upgrade == "speed":
             self.speed += 0.15  # Increase movement speed
         elif upgrade == "crit_chance":
