@@ -1,6 +1,7 @@
 import pygame
-from enemies.__init__ import BatEnemy, BlobEnemy, SkeletonEnemy
-from settings import MAP_WIDTH, MAP_HEIGHT, normal_hit_sound, crit_hit_sound
+from enemies.__init__ import *
+import player
+from settings import *
 import random
 
 class EnemyManager:
@@ -10,6 +11,7 @@ class EnemyManager:
         self.spawn_timer = 0
         self.base_spawn_interval = 140  # Base spawn interval (frames)
         self.spawn_interval = self.base_spawn_interval
+        self.boss_spawned = False
         self.level_enemy_map = {
             1: {"enemies": [(BatEnemy, 1)]},  # Only bats with weight 1
             2: {"enemies": [(BatEnemy, 3), (SkeletonEnemy, 1)]},  # Bats are more common
@@ -25,11 +27,30 @@ class EnemyManager:
         self.spawn_interval = max(30, self.base_spawn_interval - (player_level * 5))
 
     def spawn_enemy(self, player_level):
-        """Spawn a new enemy based on the player's level."""
+        """Spawn a new enemy or boss based on the player's level."""
         if player_level not in self.level_enemy_map:
             player_level = max(self.level_enemy_map.keys())  # Cap at highest level configuration
 
-        self.update_spawn_interval(player_level)  # Update spawn interval based on level
+        # Ensure Boss1Enemy spawns at level 5
+        if player_level == 5:
+            if not any(isinstance(enemy, Boss1Enemy) for enemy in self.enemies):
+                if not self.boss_spawned:
+                # Spawn the boss in the center of the map
+                    self.enemies.append(Boss1Enemy(MAP_WIDTH // 2, MAP_HEIGHT // 2))
+                    self.boss_spawned = True
+
+        if player_level in [5, 10, 15]:
+            self.spawn_interval = 170  # Set a defined spawn interval for boss levels
+        elif player_level == 6:
+            self.spawn_interval = 105  # Set a defined spawn interval for level 6
+            self.boss_spawned = False
+        elif player_level == 11:
+            self.spawn_interval = 70
+            self.boss_spawned = False
+        elif player_level == 16:
+            self.spawn_interval = 35
+        else:
+            self.update_spawn_interval(player_level)  # Update spawn interval based on level
 
         level_config = self.level_enemy_map[player_level]
         enemy_types = level_config["enemies"]
@@ -55,13 +76,14 @@ class EnemyManager:
         # Spawn the chosen enemy
         self.enemies.append(enemy_type(x, y))
 
-    def update_enemies(self, player_x, player_y):
-        """Update the position of all enemies."""
+    def update_enemies(self, player_x, player_y, player, screen, camera_x, camera_y):
+        """Update enemy positions and behaviors."""
         for enemy in self.enemies:
             enemy.move_toward_player(player_x, player_y)
+            enemy.draw(screen, camera_x, camera_y)
 
-    def draw_enemies(self, screen, camera_x, camera_y):
-        """Draw all enemies on the screen."""
+    def draw_enemies(self, screen, camera_x, camera_y, player):
+        """Draw all enemies."""
         for enemy in self.enemies:
             enemy.draw(screen, camera_x, camera_y)
 
@@ -93,10 +115,18 @@ class EnemyManager:
     def handle_player_collisions(self, player):
         """Check for collisions between the player and enemies."""
         player_rect = pygame.Rect(player.x, player.y, player.size, player.size)
-        for enemy in self.enemies[:]:
+        current_time = pygame.time.get_ticks()
+
+        for enemy in self.enemies:
             if player_rect.colliderect(enemy.get_rect()):
-                # Apply the enemy's damage to the player
-                player.health -= enemy.damage
-                self.enemies.remove(enemy)  # Remove the enemy after collision
-                return True  # Collision occurred
+                # Check if enough time has passed since the enemy last dealt damage
+                if not hasattr(enemy, "last_damage_time"):
+                    enemy.last_damage_time = 0  # Initialize if not already set
+
+                if current_time - enemy.last_damage_time >= 1000:  # 1000 ms = 1 second
+                    player.health -= enemy.damage  # Apply the enemy's damage to the player
+                    enemy.last_damage_time = current_time  # Update last damage time
+
+                return True # Collision detected
+
         return False  # No collision

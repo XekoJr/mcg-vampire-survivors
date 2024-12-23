@@ -60,11 +60,17 @@ try:
     # Set default volume for sounds
     main_menu_music.set_volume(0.1)
     game_music.set_volume(0.1)
-    normal_hit_sound.set_volume(1.0)
-    crit_hit_sound.set_volume(1.0)
+    normal_hit_sound.set_volume(0.5)
+    crit_hit_sound.set_volume(0.6)
     collect_xp_sound.set_volume(0.5)
-    level_up_sound.set_volume(1.0)
+    level_up_sound.set_volume(0.5)
 
 except pygame.error as e:
     print(f"Error loading sounds: {e}")
-    normal_hit_sound, crit_hit_sound, collect_xp_sound, level_up_sound = None, None, None, None
+    main_menu_music = None
+    game_music = None
+    
+    normal_hit_sound = None
+    crit_hit_sound = None
+    collect_xp_sound = None
+    level_up_sound = None

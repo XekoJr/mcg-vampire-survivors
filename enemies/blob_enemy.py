@@ -6,9 +6,6 @@ class BlobEnemy(Enemy):
     def __init__(self, x, y):
         # Load images specific to TankEnemy
         images = [
-            pygame.image.load('./assets/images/enemies/blob/0.png'),
-            pygame.image.load('./assets/images/enemies/blob/1.png'),
-            pygame.image.load('./assets/images/enemies/blob/2.png'),
-            pygame.image.load('./assets/images/enemies/blob/3.png')
+            pygame.image.load(f'./assets/images/enemies/blob/{i}.png') for i in range(4)
         ]
         super().__init__(x, y, hp=50, speed=0.8, xp_value=20, damage=50, size=(80, 70), images=images)

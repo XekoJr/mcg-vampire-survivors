@@ -289,10 +289,7 @@ class Menu:
         running = True
 
         # Play the level-up sound
-        try:
-            level_up_sound.play()
-        except NameError:
-            print("Level-up sound not initialized.")
+        level_up_sound.play()
 
         # Define all possible upgrades
         all_upgrades = [
