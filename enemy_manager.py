@@ -107,12 +107,12 @@ class EnemyManager:
         """Update enemy positions and behaviors."""
         for enemy in self.enemies:
             enemy.move_toward_player(player_x, player_y)
-            enemy.draw(screen, camera_x, camera_y)
+            enemy.draw(screen, camera_x, camera_y, player)
 
     def draw_enemies(self, screen, camera_x, camera_y, player):
         """Draw all enemies."""
         for enemy in self.enemies:
-            enemy.draw(screen, camera_x, camera_y)
+            enemy.draw(screen, camera_x, camera_y, player)
 
     def handle_projectile_collisions(self, projectiles, player, xp_drops):
         """Check for collisions between projectiles and enemies."""

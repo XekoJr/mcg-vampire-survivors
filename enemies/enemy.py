@@ -33,7 +33,7 @@ class Enemy:
         self.hp -= damage
         return self.hp <= 0
 
-    def draw(self, screen, camera_x, camera_y):
+    def draw(self, screen, camera_x, camera_y, player):
         """Draw the enemy and its HP bar."""
         # Update animation frame
         self.animation_timer += 1
@@ -41,8 +41,14 @@ class Enemy:
             self.animation_index = (self.animation_index + 1) % len(self.images)
             self.animation_timer = 0
 
+        # Determine if the enemy is to the right of the player
+        flip_image = self.x > player.x
+
+        # Flip the image if necessary
+        image_to_draw = pygame.transform.flip(self.images[self.animation_index], flip_image, False)
+
         # Draw the enemy sprite
-        screen.blit(self.images[self.animation_index], (
+        screen.blit(image_to_draw, (
             self.x - camera_x,
             self.y - camera_y
         ))

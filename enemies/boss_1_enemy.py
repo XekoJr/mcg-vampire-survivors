@@ -11,15 +11,18 @@ class Boss1Enemy(Enemy):
             pygame.image.load(f'./assets/images/enemies/boss_1/{i}.png') for i in range(26)
         ]
         super().__init__(x, y, hp=500, speed=1, xp_value=200, damage=60, size=(150, 150), images=images)
-        self.shoot_interval = 1800 
-        self.first_shot_delay = 300
+        self.shoot_interval = 2200  # Default interval between shots
+        self.default_shoot_interval = 2200  # Save default interval for resetting
+        self.first_shot_delay = 1500
+        self.spawn_time = pygame.time.get_ticks()
         self.last_shot_time = pygame.time.get_ticks() + self.first_shot_delay
-
+        self.shots_fired = 0  # Tracks how many shots have been fired in total
 
     def shoot_at_player(self, player):
         """Shoot a projectile towards a random location near the player's position."""
         current_time = pygame.time.get_ticks()
         if current_time - self.last_shot_time >= self.shoot_interval:
+
             # Define the random zone around the player
             offset_range = 75
             random_offset_x = random.uniform(-offset_range, offset_range)
@@ -54,4 +57,14 @@ class Boss1Enemy(Enemy):
                 'angle': angle
             })
 
+            # Update the time of the last shot
             self.last_shot_time = current_time
+            self.shots_fired += 1  # Increment the shot counter
+
+            # Adjust the shooting interval every 5 shots
+            if self.shots_fired % 5 == 0:
+                self.shoot_interval = max(500, self.shoot_interval - 50)  # Reduce interval but not below 500ms
+
+            # Reset the shooting interval after 5 cycles of reduced intervals
+            if self.shots_fired % 25 == 0:  # After 25 shots (5 intervals of 5 shots)
+                self.shoot_interval = self.default_shoot_interval

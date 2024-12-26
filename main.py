@@ -126,8 +126,8 @@ def game_loop(player, enemy_manager):
         screen.fill(GRAY)
         player.draw_with_offset(screen, camera_x, camera_y)
         draw_projectiles(screen, camera_x, camera_y)
-        draw_boss_projectiles(screen, camera_x, camera_y)
         enemy_manager.draw_enemies(screen, camera_x, camera_y, player)
+        draw_boss_projectiles(screen, camera_x, camera_y)
         draw_xp_drops(screen, player, camera_x, camera_y)
 
         if player.level_up_pending:
