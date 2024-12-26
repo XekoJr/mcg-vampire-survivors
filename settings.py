@@ -3,20 +3,22 @@
 import pygame  # Import pygame to define fonts and colors
 
 # Screen dimensions
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 1366, 768
 
 # Game world size (map limits)
-MAP_WIDTH = 1920
-MAP_HEIGHT = 1080
+MAP_WIDTH = 3000
+MAP_HEIGHT = 3000
 
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (50, 50, 50)
+DARK_GRAY = (169, 169, 169)
 RED = (200, 0, 0)
 DARK_RED = (150, 0, 0)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
+DARK_GREEN = (0, 100, 0)
 YELLOW = (255, 255, 0)
 
 # Button dimensions
@@ -56,6 +58,7 @@ try:
     crit_hit_sound = pygame.mixer.Sound('./assets/audio/crit-hit.wav')
     collect_xp_sound = pygame.mixer.Sound('./assets/audio/xp-collect.wav')
     level_up_sound = pygame.mixer.Sound('./assets/audio/level-up.wav')
+    hurt_sound = pygame.mixer.Sound('./assets/audio/hurt.wav')
 
     # Set default volume for sounds
     main_menu_music.set_volume(0.1)

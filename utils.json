@@ -1,6 +1,10 @@
 {
-    "master_volume": 5,
-    "music_volume": 6,
-    "effects_volume": 40,
-    "high_score": 1410
+    "master_volume": 9,
+    "music_volume": 32,
+    "effects_volume": 19,
+    "resolution": [
+        1366,
+        768
+    ],
+    "high_score": 510
 }

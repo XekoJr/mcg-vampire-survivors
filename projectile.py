@@ -104,7 +104,7 @@ def draw_projectiles(screen, camera_x, camera_y):
             projectile['frame_index'] = (frame_index + 1) % len(frames)
             projectile['last_frame_time'] = current_time
 
-
+# Boss projectile functions
 
 def move_boss_projectiles():
     """Move all boss projectiles."""

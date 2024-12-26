@@ -37,7 +37,7 @@ class Enemy:
         """Draw the enemy and its HP bar."""
         # Update animation frame
         self.animation_timer += 1
-        if self.animation_timer >= 5:
+        if self.animation_timer >= 10:
             self.animation_index = (self.animation_index + 1) % len(self.images)
             self.animation_timer = 0
 

@@ -27,8 +27,12 @@ def reset_game(enemy_manager):
     return Player()  # Return a new player instance
 
 def get_camera_offset(player):
-    offset_x = max(0, min(player.x - WIDTH // 2, MAP_WIDTH - WIDTH))
-    offset_y = max(0, min(player.y - HEIGHT // 2, MAP_HEIGHT - HEIGHT))
+    screen_width = pygame.display.get_surface().get_width()
+    screen_height = pygame.display.get_surface().get_height()
+
+    offset_x = max(0, min(player.x - screen_width // 2, MAP_WIDTH - screen_width))
+    offset_y = max(0, min(player.y - screen_height // 2, MAP_HEIGHT - screen_height))
+    
     return offset_x, offset_y
 
 def game_loop(player, enemy_manager):
@@ -71,6 +75,43 @@ def game_loop(player, enemy_manager):
         for enemy in enemy_manager.enemies:
             if isinstance(enemy, Boss1Enemy):
                 enemy.shoot_at_player(player)
+
+        for projectile in boss_projectiles[:]:
+            # Update projectile position
+            projectile['x'] += projectile['dx'] * projectile['speed']
+            projectile['y'] += projectile['dy'] * projectile['speed']
+
+            # Check for collision with the player
+            projectile_rect = pygame.Rect(
+                projectile['x'], 
+                projectile['y'], 
+                boss_projectile_frames[0].get_width(),  # Use the width of the projectile frame
+                boss_projectile_frames[0].get_height()  # Use the height of the projectile frame
+            )
+            player_rect = pygame.Rect(
+                player.x,
+                player.y,
+                player.size,
+                player.size
+            )
+
+            if player_rect.colliderect(projectile_rect):
+                player.health -= projectile['damage']  # Apply damage to the player
+                normal_hit_sound.play()  # Play the hurt sound effect
+                hurt_sound.play()  # Play the hurt sound effect
+                boss_projectiles.remove(projectile)  # Remove the projectile after collision
+
+                # Check if the player's health has reached 0 or below
+                if player.health <= 0:
+                    new_player = menu.game_over_screen(player.score, enemy_manager, reset_game, game_loop)
+                    if new_player:
+                        game_loop(new_player, enemy_manager)
+                    return  # End the game loop if the player dies
+
+            # Remove projectile if it goes out of bounds
+            if (projectile['x'] < 0 or projectile['x'] > MAP_WIDTH or
+                    projectile['y'] < 0 or projectile['y'] > MAP_HEIGHT):
+                boss_projectiles.remove(projectile)
 
         # Handle collisions
         enemy_manager.handle_projectile_collisions(projectiles, player, xp_drops)

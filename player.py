@@ -1,3 +1,4 @@
+import math
 import pygame
 import time
 import random  # For critical hit calculation
@@ -8,7 +9,7 @@ class Player:
         self.x = WIDTH // 2
         self.y = HEIGHT // 2
         self.size = 60
-        self.speed = 2
+        self.speed = 2.5
         self.health = 100
         self.max_health = 100
         self.xp = 0  # Total XP collected
@@ -64,27 +65,43 @@ class Player:
             self.hitbox_size[1]
         )
 
+    import math
+
     def move(self):
         """Update player movement while respecting map boundaries."""
         keys = pygame.key.get_pressed()
         moving = False  # Check if the player is moving
 
+        # Initialize movement deltas
+        dx, dy = 0, 0
+
+        # Check for movement in each direction
         if keys[pygame.K_w] or keys[pygame.K_UP]:
-            self.y = max(0, self.y - self.speed)
+            dy = -1
             self.direction = 'up'
             moving = True
         if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-            self.y = min(MAP_HEIGHT - self.size, self.y + self.speed)
+            dy = 1
             self.direction = 'down'
             moving = True
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            self.x = max(0, self.x - self.speed)
+            dx = -1
             self.direction = 'left'
             moving = True
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            self.x = min(MAP_WIDTH - self.size, self.x + self.speed)
+            dx = 1
             self.direction = 'right'
             moving = True
+
+        # Normalize movement for diagonal movement
+        magnitude = math.sqrt(dx ** 2 + dy ** 2)
+        if magnitude > 0:  # Avoid division by zero
+            dx = (dx / magnitude) * self.speed
+            dy = (dy / magnitude) * self.speed
+
+        # Apply movement, respecting map boundaries
+        self.x = max(0, min(MAP_WIDTH - self.size, self.x + dx))
+        self.y = max(0, min(MAP_HEIGHT - self.size, self.y + dy))
 
         # Update animation only if moving
         if moving:
@@ -132,19 +149,103 @@ class Player:
         pygame.draw.rect(screen, RED, self.get_hitbox(), 1)  # Outline the hitbox in red
 
     def draw_health(self, screen):
-        health_text = font_health.render(f"Health: {self.health}", True, WHITE)
-        screen.blit(health_text, (10, 10))
+        """Draw hearts to represent health at the bottom-left corner of the screen."""
+        # Load heart images (ensure these are loaded only once)
+        if not hasattr(self, 'heart_images'):
+            self.heart_images = {
+                "empty": pygame.image.load('./assets/images/hp/empty.png'),
+                "low": pygame.image.load('./assets/images/hp/low.png'),
+                "half": pygame.image.load('./assets/images/hp/half.png'),
+                "high": pygame.image.load('./assets/images/hp/high.png'),
+                "full": pygame.image.load('./assets/images/hp/full.png')
+            }
+
+        # Resize heart images if needed
+        heart_size = 32  # Adjust size as necessary
+        for key in self.heart_images:
+            self.heart_images[key] = pygame.transform.scale(self.heart_images[key], (heart_size, heart_size))
+
+        # Calculate number of hearts based on max HP
+        max_hearts = self.max_health // 20
+        current_health = self.health
+        margin = 10  # Margin from the edges
+        spacing = 5  # Space between hearts
+
+        # Position to start drawing hearts
+        x = margin
+        y = screen.get_height() - margin - heart_size
+
+        # Draw each heart based on the current health
+        for i in range(max_hearts):
+            if current_health >= 20:
+                heart_image = self.heart_images["full"]
+            elif current_health >= 15:
+                heart_image = self.heart_images["high"]
+            elif current_health >= 10:
+                heart_image = self.heart_images["half"]
+            elif current_health >= 5:
+                heart_image = self.heart_images["low"]
+            else:
+                heart_image = self.heart_images["empty"]
+
+            # Blit the heart image
+            screen.blit(heart_image, (x, y))
+
+            # Reduce current health for the next heart
+            current_health -= 20
+
+            # Adjust x for the next heart
+            x += heart_size + spacing
 
     def draw_score(self, screen):
-        score_text = font_score.render(f"Score: {self.score}", True, WHITE)
-        screen.blit(score_text, (WIDTH - 150, 10))
+        """Draw the player's score in the top-right corner."""
+        score_text = font_score.render(f"{self.score}", True, WHITE)
+        score_x = screen.get_width() - score_text.get_width() - 20  # Position relative to the right edge
+        screen.blit(score_text, (score_x, 25))
 
     def draw_xp(self, screen):
-        """Draw XP, Level, and XP Progress."""
-        xp_text = font_score.render(f"XP: {self.current_xp}/{self.xp_to_next_level}", True, WHITE)
-        level_text = font_score.render(f"Level: {self.level}", True, WHITE)
-        screen.blit(xp_text, (10, 40))
-        screen.blit(level_text, (10, 70))
+        """Draw XP bar at the top-center of the screen."""
+        # Load the XP bar images (ensure these are loaded only once)
+        if not hasattr(self, 'xp_bar_background'):
+            self.xp_bar_background = pygame.image.load('./assets/images/xp/xp-bar.png')
+            self.xp_bar_green = pygame.image.load('./assets/images/xp/xp.png')
+
+        # Reduce the size of the bars
+        original_width = self.xp_bar_background.get_width()
+        original_height = self.xp_bar_background.get_height()
+
+        # Scale the bars to 75% of their original size
+        scaled_width = int(original_width * 0.75)
+        scaled_height = int(original_height * 0.75)
+
+        # Resize the background bar
+        xp_bar_background_scaled = pygame.transform.scale(self.xp_bar_background, (scaled_width, scaled_height))
+
+        # Add left and right margin to the green bar
+        green_bar_margin = 31.5  # Pixels on both sides
+        max_green_width = scaled_width - 2 * green_bar_margin
+
+        # Calculate the XP percentage and determine the green bar's width
+        xp_percentage = self.current_xp / self.xp_to_next_level
+        green_bar_width = int(max_green_width * xp_percentage)
+
+        # Resize the green bar with adjusted height 
+        green_bar_height = int(scaled_height * 0.475)  # Make the green bar 50% of the background's height
+        xp_bar_green_scaled = pygame.transform.scale(self.xp_bar_green, (green_bar_width, green_bar_height))
+
+        # Calculate the top-center position for the bars
+        screen_width = screen.get_width()
+        bar_x = (screen_width - scaled_width) // 2
+        bar_y = 20  # Small margin from the top
+
+        # Draw the grey background bar
+        screen.blit(xp_bar_background_scaled, (bar_x, bar_y))
+
+        # Center the green bar vertically within the grey background
+        green_bar_y = bar_y + (scaled_height - green_bar_height) // 2
+
+        # Draw the green bar on top, respecting the margin
+        screen.blit(xp_bar_green_scaled, (bar_x + green_bar_margin, green_bar_y))
 
     def draw_with_offset(self, screen, camera_x, camera_y):
         """Draw player with camera offset."""

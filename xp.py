@@ -9,7 +9,7 @@ player_xp = 0  # Initial XP
 
 # Load the XP image
 try:
-    xp_image = pygame.image.load('./assets/images/xp.png')
+    xp_image = pygame.image.load('./assets/images/xp/xp-drop.png')
     xp_image = pygame.transform.scale(xp_image, (xp_width, xp_height))  # Scale the image to the desired dimensions
 except pygame.error as e:
     print(f"Error loading XP image: {e}")

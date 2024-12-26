@@ -13,13 +13,22 @@ class EnemyManager:
         self.spawn_interval = self.base_spawn_interval
         self.boss_spawned = False
         self.level_enemy_map = {
-            1: {"enemies": [(BatEnemy, 1)]},  # Only bats with weight 1
+            1: {"enemies": [(BatEnemy, 1)]},  # Only bats
             2: {"enemies": [(BatEnemy, 3), (SkeletonEnemy, 1)]},  # Bats are more common
             3: {"enemies": [(BatEnemy, 2), (SkeletonEnemy, 2), (BlobEnemy, 1)]},  # More variety
-            4: {"enemies": [(BatEnemy, 3), (SkeletonEnemy, 3), (BlobEnemy, 2)]},  # More blobs
-            5: {"enemies": [(BatEnemy, 1), (SkeletonEnemy, 1), (BlobEnemy, 1)]},  # Eazy Boss
-            10: {"enemies": [(BatEnemy, 2), (SkeletonEnemy, 2), (BlobEnemy, 2)]}, # Medium Boss
-            15: {"enemies": [(BatEnemy, 3), (SkeletonEnemy, 3), (BlobEnemy, 3)]}, # Hard Boss
+            4: {"enemies": [(BatEnemy, 3), (SkeletonEnemy, 3), (BlobEnemy, 2)]},  
+            5: {"enemies": [(BatEnemy, 2), (SkeletonEnemy, 1)]},  # Eazy Boss
+            6: {"enemies": [(BatEnemy, 1), (SkeletonEnemy, 2), (BlobEnemy, 1)]},  # Medium
+            7: {"enemies": [(BatEnemy, 1), (SkeletonEnemy, 3)]}, # More skeletons
+            8: {"enemies": [(BatEnemy, 2), (SkeletonEnemy, 3), (BlobEnemy, 2)]},
+            9: {"enemies": [(BatEnemy, 3), (SkeletonEnemy, 3), (BlobEnemy, 3)]},
+            10: {"enemies": [(BatEnemy, 1), (SkeletonEnemy, 3), (BlobEnemy, 1)]}, # Medium Boss
+            11: {"enemies": [(BatEnemy, 2), (SkeletonEnemy, 3), (BlobEnemy, 2)]},
+            12: {"enemies": [(SkeletonEnemy, 1), (BlobEnemy, 3)]}, # More blobs
+            13: {"enemies": [(BlobEnemy, 3)]}, # Only blobs
+            14: {"enemies": [(BatEnemy, 3), (SkeletonEnemy, 3), (BlobEnemy, 3)]},
+            15: {"enemies": [(BatEnemy, 1), (SkeletonEnemy, 2), (BlobEnemy, 3)]}, # Hard Boss
+            16: {"enemies": [(BatEnemy, 2), (SkeletonEnemy, 3), (BlobEnemy, 3)]},
         }
 
     def update_spawn_interval(self, player_level):
@@ -61,20 +70,38 @@ class EnemyManager:
             weights=[weight for _, weight in enemy_types],
             k=1
         )[0]
+        
+        # Apply health scaling based on player level
+        health_multiplier = 1.0
+        if player_level >= 16:
+            health_multiplier = 1.6  # 60% extra health
+        elif player_level >= 11:
+            health_multiplier = 1.4  # 40% extra health
+        elif player_level >= 6:
+            health_multiplier = 1.2  # 20% extra health
+
+        # Instantiate enemy and scale its health
+        enemy_instance = enemy_type(x=0, y=0)  # Temporarily initialize
+        enemy_instance.max_hp = int(enemy_instance.max_hp * health_multiplier)
+        enemy_instance.hp = enemy_instance.max_hp  # Reset current HP to max HP
 
         # Randomly choose a side for spawning
         side = random.randint(0, 3)
         if side == 0:  # Top edge
-            x, y = random.randint(0, MAP_WIDTH - 50), -50
+            x, y = random.randint(0, MAP_WIDTH - enemy_instance.size[0]), -enemy_instance.size[1]
         elif side == 1:  # Bottom edge
-            x, y = random.randint(0, MAP_WIDTH - 50), MAP_HEIGHT
+            x, y = random.randint(0, MAP_WIDTH - enemy_instance.size[0]), MAP_HEIGHT
         elif side == 2:  # Left edge
-            x, y = -50, random.randint(0, MAP_HEIGHT - 50)
+            x, y = -enemy_instance.size[0], random.randint(0, MAP_HEIGHT - enemy_instance.size[1])
         else:  # Right edge
-            x, y = MAP_WIDTH, random.randint(0, MAP_HEIGHT - 50)
+            x, y = MAP_WIDTH, random.randint(0, MAP_HEIGHT - enemy_instance.size[1])
+
+        # Update the enemy's position
+        enemy_instance.x = x
+        enemy_instance.y = y
 
         # Spawn the chosen enemy
-        self.enemies.append(enemy_type(x, y))
+        self.enemies.append(enemy_instance)
 
     def update_enemies(self, player_x, player_y, player, screen, camera_x, camera_y):
         """Update enemy positions and behaviors."""
@@ -126,6 +153,8 @@ class EnemyManager:
                 if current_time - enemy.last_damage_time >= 1000:  # 1000 ms = 1 second
                     player.health -= enemy.damage  # Apply the enemy's damage to the player
                     enemy.last_damage_time = current_time  # Update last damage time
+                    enemy.hp -= player.projectile_damage  # Apply player's damage to the enemy
+                    hurt_sound.play()  # Play the hurt sound effect
 
                 return True # Collision detected
 
