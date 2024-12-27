@@ -47,6 +47,9 @@ class EnemyManager:
                 # Spawn the boss in the center of the map
                     self.enemies.append(Boss1Enemy(MAP_WIDTH // 2, MAP_HEIGHT // 2))
                     self.boss_spawned = True
+                    game_music.stop()
+                    boss_spawn_sound.play()
+                    boss_music.play(-1)
 
         if player_level in [5, 10, 15]:
             self.spawn_interval = 170  # Set a defined spawn interval for boss levels
@@ -114,6 +117,7 @@ class EnemyManager:
         for enemy in self.enemies:
             enemy.draw(screen, camera_x, camera_y, player)
 
+    # Handle damage and collision logic
     def handle_projectile_collisions(self, projectiles, player, xp_drops):
         """Check for collisions between projectiles and enemies."""
         for projectile in projectiles[:]:
@@ -127,8 +131,23 @@ class EnemyManager:
                     elif normal_hit_sound:
                         normal_hit_sound.play()
 
-                    # Handle damage
                     if enemy.take_damage(projectile['damage']):  # Enemy dies
+                        # Check if the enemy is a boss
+                        if isinstance(enemy, Boss1Enemy):
+                            # Play the boss death sound
+                            boss_death_sound.play()
+                            boss_music.stop()
+                            game_music.play(-1)
+                        elif isinstance(enemy, BlobEnemy):
+                            # Play the blob death sound
+                            blob_death_sound.play()
+                        elif isinstance(enemy, SkeletonEnemy):
+                            # Play the skeleton death sound
+                            skeleton_death_sound.play()
+                        elif isinstance(enemy, BatEnemy):
+                            # Play the bat death sound
+                            bat_death_sound.play()                    
+
                         self.enemies.remove(enemy)
                         player.score += 10
                         xp_drops.append({

@@ -35,7 +35,7 @@ class Menu:
             "master_volume": 100,
             "music_volume": 100,
             "effects_volume": 100,
-            "resolution": (1366, 768),
+            "resolution": (1280, 720),
             "high_score": 0,
         }
         try:
@@ -52,6 +52,63 @@ class Menu:
 
         # Apply resolution on load
         pygame.display.set_mode(settings["resolution"])
+
+        # Define default volumes for all sounds
+        default_volumes = {
+            "main_menu_music": 0.05,
+            "game_music": 0.1,
+            "boss_music": 0.1,
+            "hover_sound": 0.3,
+            "click_sound": 0.3,
+            "normal_hit_sound": 0.5,
+            "crit_hit_sound": 0.6,
+            "collect_xp_sound": 0.5,
+            "level_up_sound": 0.5,
+            "hurt_sound": 0.5,
+            "death_sound": 1.0,
+            "ability_obtained_sound": 0.5,
+            "ability_used_sound": 0.5,
+            "bat_death_sound": 0.05,
+            "boss_death_sound": 0.5,
+            "skeleton_death_sound": 0.6,
+            "blob_death_sound": 1.3,
+            "boss_spawn_sound": 0.5,
+        }
+
+        # Minimum volume threshold
+        min_volume = 0.01  # 1% volume minimum
+
+        # Apply volume settings
+        master_volume = max(settings["master_volume"] / 100, min_volume)
+        music_volume = max((settings["music_volume"] / 100) * master_volume, min_volume)
+        effects_volume = max((settings["effects_volume"] / 100) * master_volume, min_volume)
+
+        # Scale and apply volumes for music
+        if main_menu_music: main_menu_music.set_volume(max(default_volumes["main_menu_music"] * music_volume, min_volume))
+        if game_music: game_music.set_volume(max(default_volumes["game_music"] * music_volume, min_volume))
+        if boss_music: boss_music.set_volume(max(default_volumes["boss_music"] * music_volume, min_volume))
+
+        # Scale and apply volumes for effects
+        for sound_key, sound_obj in {
+            "hover_sound": hover_sound,
+            "click_sound": click_sound,
+            "normal_hit_sound": normal_hit_sound,
+            "crit_hit_sound": crit_hit_sound,
+            "collect_xp_sound": collect_xp_sound,
+            "level_up_sound": level_up_sound,
+            "hurt_sound": hurt_sound,
+            "death_sound": death_sound,
+            "ability_obtained_sound": ability_obtained_sound,
+            "ability_used_sound": ability_used_sound,
+            "bat_death_sound": bat_death_sound,
+            "boss_death_sound": boss_death_sound,
+            "skeleton_death_sound": skeleton_death_sound,
+            "blob_death_sound": blob_death_sound,
+            "boss_spawn_sound": boss_spawn_sound,
+        }.items():
+            if sound_obj:
+                sound_obj.set_volume(max(default_volumes[sound_key] * effects_volume, min_volume))
+
         return settings
 
     def save_settings(self):
@@ -96,11 +153,17 @@ class Menu:
 
     def main_menu(self, player, enemy_manager, reset_game, game_loop):
         """Displays the main menu."""
-        running = True
+        hover_sound.set_volume(0.5)  # Adjust volume if necessary
+        click_sound.set_volume(0.5)
+
         main_menu_music.play(-1)  # Loop the music indefinitely
 
+        running = True
         button_margin = 20  # Margin between buttons and screen edges
         button_width, button_height = 200, 50
+
+        # To track hover state and play sound only once per hover
+        hovered_button = None
 
         while running:
             if self.menu_background:
@@ -123,8 +186,9 @@ class Menu:
             button_y = self.screen.get_height() - (button_height * 2) - button_margin * 3
 
             # Start Game Button
-            button_color = DARK_RED if button_x < mouse_x < button_x + button_width and \
-                                        button_y < mouse_y < button_y + button_height else RED
+            start_hovered = button_x < mouse_x < button_x + button_width and \
+                            button_y < mouse_y < button_y + button_height
+            button_color = DARK_RED if start_hovered else RED
             pygame.draw.rect(self.screen, button_color, (button_x, button_y, button_width, button_height))
             button_text = font_button.render("Start Game", True, WHITE)
             self.screen.blit(button_text, (
@@ -134,8 +198,9 @@ class Menu:
 
             # Settings Button
             settings_y = button_y + button_height + button_margin
-            settings_button_color = DARK_RED if button_x < mouse_x < button_x + button_width and \
-                                                    settings_y < mouse_y < settings_y + button_height else RED
+            settings_hovered = button_x < mouse_x < button_x + button_width and \
+                            settings_y < mouse_y < settings_y + button_height
+            settings_button_color = DARK_RED if settings_hovered else RED
             pygame.draw.rect(self.screen, settings_button_color, (button_x, settings_y, button_width, button_height))
             settings_text = font_button.render("Settings", True, WHITE)
             self.screen.blit(settings_text, (
@@ -143,14 +208,27 @@ class Menu:
                 settings_y + (button_height - settings_text.get_height()) // 2
             ))
 
+            # Play hover sound when hovering over a button
+            if start_hovered and hovered_button != "start":
+                hover_sound.play()
+                hovered_button = "start"
+            elif settings_hovered and hovered_button != "settings":
+                hover_sound.play()
+                hovered_button = "settings"
+            elif not start_hovered and not settings_hovered:
+                hovered_button = None
+
+            # Event handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if button_x < mouse_x < button_x + button_width and button_y < mouse_y < button_y + button_height:
+                    if start_hovered:
+                        click_sound.play()  # Play click sound
                         running = False
-                    if button_x < mouse_x < button_x + button_width and settings_y < mouse_y < settings_y + button_height:
+                    if settings_hovered:
+                        click_sound.play()  # Play click sound
                         self.settings_menu()
 
             pygame.display.flip()
@@ -174,6 +252,11 @@ class Menu:
             current_resolution_index = resolutions.index((1366, 768))
         else:
             current_resolution_index = resolutions.index(current_resolution)
+
+        hovered_button = None
+
+        # Minimum volume threshold (ensures sound is always audible)
+        min_volume = 0.01  # 1% volume minimum
 
         while running:
             self.screen.fill(BLACK)
@@ -207,28 +290,39 @@ class Menu:
                     self.settings[option['key']] = max(0, min(100, new_value))
 
                     # Apply volume changes dynamically
-                    master_volume = self.settings["master_volume"] / 100
-                    if option['key'] == "master_volume":
-                        pygame.mixer.music.set_volume(master_volume)
-                        music_volume = self.settings["music_volume"] / 100 * master_volume
-                        for music in [main_menu_music, game_music]:
-                            if music:
-                                music.set_volume(music_volume)
+                    master_volume = max(self.settings["master_volume"] / 100, min_volume)
+                    music_volume = max((self.settings["music_volume"] / 100) * master_volume, min_volume)
+                    effects_volume = max((self.settings["effects_volume"] / 100) * master_volume, min_volume)
 
-                        effects_volume = self.settings["effects_volume"] / 100 * master_volume
-                        for sound in [normal_hit_sound, crit_hit_sound, collect_xp_sound, level_up_sound]:
-                            if sound:
-                                sound.set_volume(effects_volume)
-                    elif option['key'] == "music_volume":
-                        music_volume = self.settings["music_volume"] / 100 * master_volume
-                        for music in [main_menu_music, game_music]:
-                            if music:
-                                music.set_volume(music_volume)
-                    elif option['key'] == "effects_volume":
-                        effects_volume = self.settings["effects_volume"] / 100 * master_volume
-                        for sound in [normal_hit_sound, crit_hit_sound, collect_xp_sound, level_up_sound]:
-                            if sound:
-                                sound.set_volume(effects_volume)
+                    # Adjust music volumes
+                    for music, default_vol in {
+                        main_menu_music: 0.05,
+                        game_music: 0.1,
+                        boss_music: 0.1,
+                    }.items():
+                        if music:
+                            music.set_volume(max(default_vol * music_volume, min_volume))
+
+                    # Adjust effects volumes
+                    for sound, default_vol in {
+                        hover_sound: 0.3,
+                        click_sound: 0.3,
+                        normal_hit_sound: 0.5,
+                        crit_hit_sound: 0.6,
+                        collect_xp_sound: 0.5,
+                        level_up_sound: 0.5,
+                        hurt_sound: 0.5,
+                        death_sound: 1.0,
+                        ability_obtained_sound: 0.5,
+                        ability_used_sound: 0.5,
+                        bat_death_sound: 0.05,
+                        boss_death_sound: 0.5,
+                        skeleton_death_sound: 0.6,
+                        blob_death_sound: 1.3,
+                        boss_spawn_sound: 0.5,
+                    }.items():
+                        if sound:
+                            sound.set_volume(max(default_vol * effects_volume, min_volume))
 
             # Resolution Setting with Arrows
             resolution_text = font_button.render(f"{resolutions[current_resolution_index][0]}x{resolutions[current_resolution_index][1]}", True, WHITE)
@@ -266,12 +360,13 @@ class Menu:
                     self.settings["resolution"] = resolutions[current_resolution_index]
                     pygame.display.set_mode(resolutions[current_resolution_index])
 
-            # Back Button (acts as Save button)
+            # Back Button (Save and Return to Main Menu)
             back_button_x = 20
             back_button_y = self.screen.get_height() - 70
             back_button_width, back_button_height = 150, 50
-            back_button_color = DARK_RED if back_button_x < mouse_x < back_button_x + back_button_width and \
-                                                    back_button_y < mouse_y < back_button_y + back_button_height else RED
+            back_hovered = back_button_x < mouse_x < back_button_x + back_button_width and \
+                        back_button_y < mouse_y < back_button_y + back_button_height
+            back_button_color = DARK_RED if back_hovered else RED
             pygame.draw.rect(self.screen, back_button_color, (back_button_x, back_button_y, back_button_width, back_button_height))
             back_text = font_button.render("Back", True, WHITE)
             self.screen.blit(back_text, (
@@ -279,14 +374,21 @@ class Menu:
                 back_button_y + (back_button_height - back_text.get_height()) // 2
             ))
 
+            # Play hover sound for the Back button
+            if back_hovered and hovered_button != "back":
+                hover_sound.play()
+                hovered_button = "back"
+            elif not back_hovered and hovered_button == "back":
+                hovered_button = None
+
+            # Event handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if back_button_x < mouse_x < back_button_x + back_button_width and \
-                            back_button_y < mouse_y <= back_button_y + back_button_height:
-                        self.menu_background = self.load_menu_background()
+                    if back_hovered:
+                        click_sound.play()  # Play click sound
                         self.save_settings()
                         running = False
 
@@ -295,14 +397,18 @@ class Menu:
     def game_over_screen(self, score, enemy_manager, reset_game, game_loop):
         """Display the Game Over screen."""
         
+        # Stop the game music
         game_music.stop()
-        
+        boss_music.stop()
+
         running = True
 
         # Update high score if necessary
         if score > self.high_score:
             self.high_score = score
             self.save_high_score(score)
+
+        hovered_button = None  # To track which button is hovered
 
         while running:
             self.screen.fill(BLACK)
@@ -321,14 +427,15 @@ class Menu:
             self.screen.blit(score_text, 
                             (screen_width // 2 - score_text.get_width() // 2, screen_height // 4 + 80))
 
-            # Buttons for Restart and Return to Menu
+            # Get mouse position
             mouse_x, mouse_y = pygame.mouse.get_pos()
 
             # Restart Button
             restart_button_x = screen_width // 2 - 100
             restart_button_y = screen_height // 2
-            restart_button_color = DARK_RED if restart_button_x < mouse_x < restart_button_x + 200 and \
-                                                restart_button_y < mouse_y < restart_button_y + 50 else RED
+            restart_hovered = restart_button_x < mouse_x < restart_button_x + 200 and \
+                            restart_button_y < mouse_y < restart_button_y + 50
+            restart_button_color = DARK_RED if restart_hovered else RED
             pygame.draw.rect(self.screen, restart_button_color, 
                             (restart_button_x, restart_button_y, 200, 50))
             restart_text = font_button.render("Restart", True, WHITE)
@@ -339,8 +446,9 @@ class Menu:
             # Main Menu Button
             menu_button_x = screen_width // 2 - 100
             menu_button_y = restart_button_y + 70
-            menu_button_color = DARK_RED if menu_button_x < mouse_x < menu_button_x + 200 and \
-                                            menu_button_y < mouse_y < menu_button_y + 50 else RED
+            menu_hovered = menu_button_x < mouse_x < menu_button_x + 200 and \
+                        menu_button_y < mouse_y < menu_button_y + 50
+            menu_button_color = DARK_RED if menu_hovered else RED
             pygame.draw.rect(self.screen, menu_button_color, 
                             (menu_button_x, menu_button_y, 200, 50))
             menu_text = font_button.render("Main Menu", True, WHITE)
@@ -348,22 +456,33 @@ class Menu:
                             (menu_button_x + (200 - menu_text.get_width()) // 2, 
                             menu_button_y + (50 - menu_text.get_height()) // 2))
 
+            # Play hover sound for buttons
+            if restart_hovered and hovered_button != "restart":
+                hover_sound.play()
+                hovered_button = "restart"
+            elif menu_hovered and hovered_button != "menu":
+                hover_sound.play()
+                hovered_button = "menu"
+            elif not restart_hovered and not menu_hovered and hovered_button is not None:
+                hovered_button = None
+
+            # Event handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # Restart Button
-                    if restart_button_x < mouse_x < restart_button_x + 200 and \
-                            restart_button_y < mouse_y < restart_button_y + 50:
+                    if restart_hovered:
+                        click_sound.play()  # Play click sound
                         new_player = Player()  # Create a new player instance
                         reset_game(enemy_manager)  # Reset the game state
                         running = False
                         game_loop(new_player, enemy_manager)
                         return
                     # Main Menu Button
-                    if menu_button_x < mouse_x < menu_button_x + 200 and \
-                            menu_button_y < mouse_y < menu_button_y + 50:
+                    if menu_hovered:
+                        click_sound.play()  # Play click sound
                         new_player = Player()  # Create a new player instance
                         reset_game(enemy_manager)  # Reset the game state
                         running = False
@@ -391,6 +510,8 @@ class Menu:
 
         # Randomly select 3 upgrades
         selected_upgrades = random.sample(all_upgrades, 3)
+
+        hovered_button = None  # To track which button is hovered
 
         while running:
             self.screen.fill(BLACK)
@@ -432,10 +553,17 @@ class Menu:
                     button_y + (button_height - option_text.get_height()) // 2
                 ))
 
+                # Play hover sound
+                if is_hovered and hovered_button != i:
+                    hover_sound.play()
+                    hovered_button = i
+                elif not is_hovered and hovered_button == i:
+                    hovered_button = None
+
                 # Add button rect for click detection
                 button_rects.append(pygame.Rect(button_x, button_y, button_width, button_height))
 
-            # Handle events outside of button loop
+            # Handle events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -443,6 +571,7 @@ class Menu:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     for i, rect in enumerate(button_rects):
                         if rect.collidepoint(mouse_x, mouse_y):  # Check if click is inside button rect
+                            click_sound.play()  # Play click sound
                             player.apply_upgrade(selected_upgrades[i]["upgrade"])
                             running = False  # Exit menu
 

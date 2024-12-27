@@ -117,6 +117,7 @@ def game_loop(player, enemy_manager):
         enemy_manager.handle_projectile_collisions(projectiles, player, xp_drops)
         if enemy_manager.handle_player_collisions(player):
             if player.health <= 0:
+                death_sound.play()
                 new_player = menu.game_over_screen(player.score, enemy_manager, reset_game, game_loop)
                 if new_player:
                     game_loop(new_player, enemy_manager)
@@ -144,5 +145,6 @@ def game_loop(player, enemy_manager):
 
 if __name__ == "__main__":
     player = Player()
+    player.level = 2
     enemy_manager = EnemyManager()
     menu.main_menu(player, enemy_manager, reset_game, game_loop)

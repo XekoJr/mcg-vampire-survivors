@@ -63,8 +63,9 @@ class Boss1Enemy(Enemy):
 
             # Adjust the shooting interval every 5 shots
             if self.shots_fired % 5 == 0:
-                self.shoot_interval = max(500, self.shoot_interval - 50)  # Reduce interval but not below 500ms
+                self.shoot_interval = max(500, self.shoot_interval - 35)  # Reduce interval but not below 500ms
 
             # Reset the shooting interval after 5 cycles of reduced intervals
-            if self.shots_fired % 25 == 0:  # After 25 shots (5 intervals of 5 shots)
+            if self.shots_fired % 6 == 0:  # After 25 shots (5 intervals of 5 shots)
                 self.shoot_interval = self.default_shoot_interval
+                self.shots_fired = 0
