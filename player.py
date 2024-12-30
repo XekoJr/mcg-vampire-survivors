@@ -1,7 +1,7 @@
 import math
 import pygame
 import time
-import random  # For critical hit calculation
+from abilities.__init__ import *
 from settings import *
 
 class Player:
@@ -9,9 +9,9 @@ class Player:
         self.x = WIDTH // 2
         self.y = HEIGHT // 2
         self.size = 60
-        self.speed = 2.5
-        self.health = 100
-        self.max_health = 100
+        self.speed = 2  
+        self.health = 40
+        self.max_health = 40
         self.xp = 0  # Total XP collected
         self.level = 1  # Starting level
         self.current_xp = 0  # XP toward the next level
@@ -19,11 +19,20 @@ class Player:
         self.last_shot_time = 0
         self.score = 0
         self.level_up_pending = False
-
-        # Scaling attributes
         self.fire_rate = fire_rate  # Milliseconds between shots
-        self.projectile_damage = 10  # Base projectile damage
+        self.projectile_damage = 6  # Base projectile damage
         self.crit_chance = 0  # Critical hit chance (percentage)
+        self.crit_damage = 1.5  # Multiplier for critical hit damage
+
+        # Base player stats
+        self.base_speed = 2
+        self.base_health = 40
+        self.base_projectile_damage = 6
+        self.base_fire_rate = fire_rate
+        self.base_crit_chance = 0
+        self.base_crit_damage = 1.5
+
+        self.base_invincibility_time = 0.35  # Default invincibility duration in seconds
 
         # Hitbox configuration
         self.hitbox_offset = (10, 10)  # Offset from the sprite's top-left corner
@@ -55,6 +64,14 @@ class Player:
         # Control animation speed in seconds
         self.animation_speed = 0.2  # Swap image every 0.2 seconds
         self.last_animation_time = time.time()  # Last animation time
+
+        # Status effects
+        self.status_effects = {}
+
+        # Abilities
+        self.abilities = []  # List of active abilities
+        self.invincibility_time = 0.35  # Default invincibility duration in seconds
+        self.last_damage_time = 0
 
     def get_hitbox(self):
         """Returns the player's hitbox as a pygame.Rect."""
@@ -132,10 +149,10 @@ class Player:
         elif upgrade == "damage":
             self.projectile_damage = int(self.projectile_damage * 1.3)  # Increase damage
         elif upgrade == "health":
-            self.health = min(self.max_health, self.health + 50)  # Restore health
+            self.health = min(self.max_health, self.health + 40)  # Restore health
         elif upgrade == "max_health":
             self.max_health += 25  # Increase max health
-            self.health = min(self.max_health, self.health + 25)
+            self.health = min(self.max_health, self.health + 20)
         elif upgrade == "speed":
             self.speed += 0.15  # Increase movement speed
         elif upgrade == "crit_chance":
@@ -250,3 +267,192 @@ class Player:
     def draw_with_offset(self, screen, camera_x, camera_y):
         """Draw player with camera offset."""
         screen.blit(self.player_images[self.direction][self.animation_index], (self.x - camera_x, self.y - camera_y))
+
+    def apply_stat_upgrades(self, skills):
+        """Apply stat upgrades based on skill levels."""
+        if "max_health" in skills:
+            level = skills["max_health"].get("level", 0)
+            self.max_health = self.base_health + (20 * level)
+            self.health = self.max_health
+
+        if "speed" in skills:
+            level = skills["speed"].get("level", 0)
+            self.speed = self.base_speed + (0.2 * level)  # Example: +0.2 speed per level
+
+        # Add other stats similarly
+        if "damage" in skills:
+            level = skills["damage"].get("level", 0)
+            self.projectile_damage = self.base_projectile_damage + (2 * level)  # Example: +2 damage per level
+
+        if "fire_rate" in skills:
+            level = skills["fire_rate"].get("level", 0)
+            self.fire_rate = self.base_fire_rate - (50 * level)
+
+        if "crit_chance" in skills:
+            level = skills["crit_chance"].get("level", 0)
+            self.crit_chance = self.base_crit_chance + (2.5 * level)
+
+        if "crit_damage" in skills:
+            level = skills["crit_damage"].get("level", 0)
+            self.crit_damage = self.crit_damage + (0.15 * level)
+
+    def initialize_abilities(self, skills):
+        """Initialize abilities based on skill levels."""
+        for skill_name, skill_data in skills.items():
+            if skill_data["type"] == "abilities" and skill_data["level"] > 0:
+                if skill_name == "heal":
+                    self.abilities.append(HealingAbility())
+                elif skill_name == "shield":
+                    self.abilities.append(ShieldAbility())
+                elif skill_name == "invincibility":
+                    self.abilities.append(InvincibilityAbility())
+                elif skill_name in ["burn_damage", "burn_duration"]:
+                    # Handle BurningAbility
+                    burning_ability = next((a for a in self.abilities if isinstance(a, BurningAbility)), None)
+                    if not burning_ability:
+                        burning_ability = BurningAbility()
+                        self.abilities.append(burning_ability)
+                # Activate the ability
+                self.abilities[-1].active = True
+
+    def apply_skill_upgrades(self, skills):
+        """Update abilities based on skill upgrades."""
+        for ability in self.abilities:
+            if isinstance(ability, BurningAbility):
+                burn_damage_level = skills.get("burn_damage", {}).get("level", 0)
+                burn_duration_level = skills.get("burn_duration", {}).get("level", 0)
+                ability.update_attributes(burn_damage_level, burn_duration_level)
+            elif isinstance(ability, HealingAbility):
+                heal_level = skills.get("heal", {}).get("level", 0)
+                ability.heal_amount = 5 + (2 * heal_level)
+                ability.cooldown = max(10 - heal_level, 3)
+            elif isinstance(ability, ShieldAbility):
+                shield_level = skills.get("shield", {}).get("level", 0)
+                ability.cooldown = max(30 - (5 * shield_level), 10)
+            elif isinstance(ability, InvincibilityAbility):
+                invincibility_level = skills.get("invincibility", {}).get("level", 0)
+                ability.duration = 0.5 + (0.5 * invincibility_level)
+            if isinstance(ability, InvincibilityAbility):
+                invincibility_level = skills.get("invincibility", {}).get("level", 0)
+                ability.level = invincibility_level
+                
+    def apply_status(self, name, duration, tick_interval=None, tick_damage=None, enemy=None):
+        """Apply a status effect to the player."""
+        self.status_effects[name] = {
+            "duration": duration,
+            "start_time": pygame.time.get_ticks(),
+            "tick_interval": tick_interval,
+            "tick_damage": tick_damage,
+            "last_tick": 0,
+            "enemy": enemy
+        }
+
+    def update_status_effects(self):
+        """Update the status effects, applying tick damage if applicable."""
+        current_time = pygame.time.get_ticks()
+        expired_effects = []
+        for name, effect in self.status_effects.items():
+            if current_time - effect["start_time"] > effect["duration"] * 1000:
+                expired_effects.append(name)
+            elif effect["tick_interval"] and effect["tick_damage"]:
+                if current_time - effect["last_tick"] >= effect["tick_interval"] * 1000:
+                    self.health = max(0, self.health - effect["tick_damage"])
+                    hurt_sound.play()
+                    effect["last_tick"] = current_time
+
+        for effect in expired_effects:
+            del self.status_effects[effect]
+
+    def update_abilities_effects(self):
+        """Update passive effects from abilities."""
+        for ability in self.abilities:
+            if ability.active:
+                if isinstance(ability, HealingAbility):
+                    ability.heal(self)
+
+    def draw_status_abilities_icons(self, screen):
+        """Draw status effect and ability icons with frames at the top-left corner of the screen in a unified order."""
+        # Define the size and spacing for the icons
+        icon_size = 35
+        frame_size = 45  # Slightly larger to encompass the icon
+        spacing = 5
+
+        # Calculate the starting position at the top-left corner
+        margin = 10  # Margin from the screen edges
+        x = margin
+        y = margin  # Start from the top-left corner
+
+        # Load frame images (do this once to avoid repeated loading)
+        status_frame_image = pygame.image.load('./assets/images/status/debuff-frame-2.png')
+        status_frame_image = pygame.transform.scale(status_frame_image, (frame_size, frame_size))
+        status_frame_boss_image = pygame.image.load('./assets/images/status/debuff-frame-boss.png')
+        status_frame_boss_image = pygame.transform.scale(status_frame_boss_image, (frame_size, frame_size))
+        ability_frame_images = {}
+
+        # Preload ability frames dynamically for levels 1-5
+        for level in range(1, 6):
+            frame_path = f'./assets/images/abilities/abilities-frame-{level}.png'
+            try:
+                frame_image = pygame.image.load(frame_path)
+                frame_image = pygame.transform.scale(frame_image, (frame_size, frame_size))
+                ability_frame_images[level] = frame_image
+            except FileNotFoundError:
+                print(f"[DEBUG] Missing ability frame for level {level}.")
+
+        # Combine abilities and statuses into a unified list
+        icons_to_draw = []
+
+        # Add active abilities to the list
+        for ability in self.abilities:
+            
+            if isinstance(ability, ShieldAbility)and not ability.ready:
+                    continue  # Skip further processing for this ability
+            
+            if ability.active:
+                # Preload the ability's icon
+                # Draw the ability icon
+                ability.draw_icon(screen, x + (frame_size - icon_size) // 2, y + (frame_size - icon_size) // 2, icon_size)
+
+                # Draw the ability frame based on its level
+                level = getattr(ability, 'level', 1)  # Assume level 1 if not defined
+                frame_path = f'./assets/images/abilities/abilities-frame-{min(level, 5)}.png'
+                try:
+                    frame = pygame.image.load(frame_path)
+                    frame = pygame.transform.scale(frame, (frame_size, frame_size))
+                    screen.blit(frame, (x, y))
+                except FileNotFoundError:
+                    print(f"[DEBUG] Frame file not found for level {level}.")
+
+                # Adjust position for the next icon
+                x += frame_size + spacing
+                if x + frame_size > screen.get_width() - margin:
+                    x = margin
+                    y += frame_size + spacing
+
+        # Add active status effects to the list
+        for status_name, status_data in self.status_effects.items():
+            try:
+                # Load the icon dynamically for the status
+                icon = pygame.image.load(f'./assets/images/status/{status_name}.png')
+                icon = pygame.transform.scale(icon, (icon_size, icon_size))
+                if status_data.get("enemy") == "Boss":
+                    frame_image = status_frame_boss_image
+                else:
+                    frame_image = status_frame_image
+                icons_to_draw.append(("status", status_name, icon, frame_image))
+            except FileNotFoundError:
+                print(f"[DEBUG] Status icon for {status_name} not found.")
+
+        # Draw icons in the unified order
+        for item_type, item_name, icon, frame_image in icons_to_draw:
+            # Draw the frame
+            screen.blit(frame_image, (x, y))
+            # Draw the icon inside the frame
+            screen.blit(icon, (x + (frame_size - icon_size) // 2, y + (frame_size - icon_size) // 2))
+            # Adjust position for the next icon
+            x += frame_size + spacing
+
+            # If the row is full, move to the next line
+            if x + frame_size + spacing > screen.get_width() - margin:
+                x = margin
+                y += frame_size + spacing

@@ -8,4 +8,4 @@ class BatEnemy(Enemy):
         images = [
             pygame.image.load(f'./assets/images/enemies/bat/{i}.png') for i in range(4)
         ]
-        super().__init__(x, y, hp=20, speed=1.5, xp_value=5, damage=10, size=(50, 35), images=images)
+        super().__init__(x, y, hp=15, speed=1.5, xp_value=5, damage=10, size=(50, 35), images=images)

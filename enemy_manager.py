@@ -1,5 +1,6 @@
 import pygame
 from enemies.__init__ import *
+from abilities.__init__ import *
 import player
 from settings import *
 import random
@@ -131,25 +132,38 @@ class EnemyManager:
                     elif normal_hit_sound:
                         normal_hit_sound.play()
 
-                    if enemy.take_damage(projectile['damage']):  # Enemy dies
+                    # Apply burn or poison if abilities are active
+                    for ability in player.abilities:
+                        if isinstance(ability, BurningAbility) and ability.active:
+                            ability.apply_burn(enemy)
+                        """
+                        if isinstance(ability, PoisonAbility) and ability.active:
+                            ability.poison(enemy)
+                        """
+                        
+                    if enemy.take_damage(projectile['damage']): # Check if the enemy is dead
+
                         # Check if the enemy is a boss
                         if isinstance(enemy, Boss1Enemy):
                             # Play the boss death sound
+                            player.score += 100
                             boss_death_sound.play()
                             boss_music.stop()
                             game_music.play(-1)
                         elif isinstance(enemy, BlobEnemy):
                             # Play the blob death sound
+                            player.score += 15
                             blob_death_sound.play()
                         elif isinstance(enemy, SkeletonEnemy):
                             # Play the skeleton death sound
+                            player.score += 10
                             skeleton_death_sound.play()
                         elif isinstance(enemy, BatEnemy):
                             # Play the bat death sound
+                            player.score += 5
                             bat_death_sound.play()                    
 
                         self.enemies.remove(enemy)
-                        player.score += 10
                         xp_drops.append({
                             'x': enemy.x, 
                             'y': enemy.y,
@@ -165,16 +179,42 @@ class EnemyManager:
 
         for enemy in self.enemies:
             if player_rect.colliderect(enemy.get_rect()):
-                # Check if enough time has passed since the enemy last dealt damage
-                if not hasattr(enemy, "last_damage_time"):
-                    enemy.last_damage_time = 0  # Initialize if not already set
+                # Check if enough time has passed since the player was last damaged
+                if current_time - player.last_damage_time >= player.invincibility_time * 1000:
+                    
+                    # Check for active ShieldAbility
+                    for ability in player.abilities:
+                        if isinstance(ability, ShieldAbility) and ability.active:
+                            if ability.block(player):
+                                block_hit_sound.play()
+                                return True  # Damage was blocked
 
-                if current_time - enemy.last_damage_time >= 1000:  # 1000 ms = 1 second
-                    player.health -= enemy.damage  # Apply the enemy's damage to the player
-                    enemy.last_damage_time = current_time  # Update last damage time
-                    enemy.hp -= player.projectile_damage  # Apply player's damage to the enemy
+                    # Apply damage to the player
+                    player.health -= enemy.damage
+                    player.last_damage_time = current_time  # Update last damage time
                     hurt_sound.play()  # Play the hurt sound effect
 
-                return True # Collision detected
+                    # Apply damage to the enemy
+                    enemy.hp -= player.projectile_damage  # Reduce enemy HP
+
+                    if enemy.hp <= 0:
+                        self.enemies.remove(enemy)  # Remove the enemy if its HP drops to 0 or below
+                        player.score += enemy.xp_value
+
+                    # Apply additional effects for specific enemies
+                    if isinstance(enemy, BlobEnemy):
+                        enemy.attack_player(player)  # Apply poison effect
+
+                    # Apply invincibility extension
+                    for ability in player.abilities:
+                        if isinstance(ability, InvincibilityAbility) and ability.active:
+                            ability.apply_invincibility(player)
+
+                    # Check if the player's health has reached 0 or below
+                    if player.health <= 0:
+                        death_sound.play()
+                        return True  # Player is dead
+
+                return True  # Collision detected
 
         return False  # No collision

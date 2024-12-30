@@ -1,7 +1,6 @@
 import random
 import pygame
 import math
-import player
 from settings import *
 
 pygame.mixer.init()
@@ -43,7 +42,7 @@ def fire_projectile(player, camera_x, camera_y):
     angle = math.degrees(math.atan2(-dy, dx))  # Negative dy because Pygame's y-axis is flipped
 
     is_crit = random.random() < (player.crit_chance / 100)
-    damage = player.projectile_damage * 2 if is_crit else player.projectile_damage
+    damage = player.projectile_damage * player.crit_damage if is_crit else player.projectile_damage
 
     projectiles.append({
         'x': player.x + player.size / 2,

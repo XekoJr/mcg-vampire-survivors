@@ -1,6 +1,4 @@
-# settings.py
-
-import pygame  # Import pygame to define fonts and colors
+import pygame
 
 # Screen dimensions
 WIDTH, HEIGHT = 1366, 768
@@ -8,6 +6,15 @@ WIDTH, HEIGHT = 1366, 768
 # Game world size (map limits)
 MAP_WIDTH = 3000
 MAP_HEIGHT = 3000
+
+try:
+    # Load the background image
+    background_image = pygame.image.load('./assets/images/background/vede.jpg')
+except pygame.error as e:
+    #grey background if image not found
+    print(f"Error loading background image: {e}")
+    background_image = pygame.Surface((WIDTH, HEIGHT))
+    background_image.fill((50, 50, 50))
 
 # Colors
 WHITE = (255, 255, 255)
@@ -32,7 +39,7 @@ ENEMY_SIZE = (50, 40)  # Width and height of the enemy
 # Game settings
 player_speed = 2 # Speed of the player character
 projectile_speed = 7 # Speed of player projectiles
-fire_rate = 1000 # Milliseconds between shots
+fire_rate = 1200 # Milliseconds between shots
 enemy_spawn_rate = 50 # Lower value means faster spawn rate
 
 # Font settings (after pygame is initialized in main.py)
@@ -42,8 +49,6 @@ font_credit = pygame.font.Font(pygame.font.match_font('arial'), 20)
 font_health = pygame.font.Font(pygame.font.match_font('arial'), 25)
 font_score = pygame.font.Font(pygame.font.match_font('arial'), 25)
 
-
-
 # Audio settings
 pygame.mixer.init()  # Initialize the pygame mixer
 
@@ -52,7 +57,8 @@ try:
     # Music
     main_menu_music = pygame.mixer.Sound('./assets/audio/main-menu-music.wav') 
     game_music = pygame.mixer.Sound('./assets/audio/ingame-music.wav')         
-    boss_music = pygame.mixer.Sound('./assets/audio/boss-music.wav')           
+    boss_music = pygame.mixer.Sound('./assets/audio/boss-music.wav')
+    skill_music = pygame.mixer.Sound('./assets/audio/skill-music.mp3')           
 
     # Menu Interaction
     hover_sound = pygame.mixer.Sound('./assets/audio/menu-hover.wav')          
@@ -61,11 +67,14 @@ try:
     # Sound effects
         # Projectile sounds
     normal_hit_sound = pygame.mixer.Sound('./assets/audio/normal-hit.wav')    
-    crit_hit_sound = pygame.mixer.Sound('./assets/audio/crit-hit.wav')        
+    crit_hit_sound = pygame.mixer.Sound('./assets/audio/crit-hit.wav')      
+    block_hit_sound = pygame.mixer.Sound('./assets/audio/block_hit.mp3')  
 
         # xp and level up sounds
     collect_xp_sound = pygame.mixer.Sound('./assets/audio/xp-collect.wav')    
-    level_up_sound = pygame.mixer.Sound('./assets/audio/level-up.wav')        
+    level_up_sound = pygame.mixer.Sound('./assets/audio/level-up.wav')   
+    skill_bought_sound = pygame.mixer.Sound('./assets/audio/skill-bought.mp3')
+    skill_failed_sound = pygame.mixer.Sound('./assets/audio/skill-failed.mp3') 
 
         # Player sounds
     hurt_sound = pygame.mixer.Sound('./assets/audio/hurt.wav')               
@@ -87,15 +96,19 @@ except pygame.error as e:
     main_menu_music = None 
     game_music = None
     boss_music = None
+    skill_music = None
 
     button_hover_sound = None
     button_click_sound = None
     
     normal_hit_sound = None
     crit_hit_sound = None
+    block_hit_sound = None
 
     collect_xp_sound = None
     level_up_sound = None
+    skill_bought_sound = None
+    skill_failed_sound = None
 
     hurt_sound = None
     death_sound = None
