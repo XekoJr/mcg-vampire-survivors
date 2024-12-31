@@ -13,7 +13,7 @@ class Player:
         self.health = 40
         self.max_health = 40
         self.xp = 0  # Total XP collected
-        self.level = 5  # Starting level
+        self.level = 1  # Starting level
         self.current_xp = 0  # XP toward the next level
         self.xp_to_next_level = 50  # Initial XP required to level up
         self.last_shot_time = 0
@@ -82,8 +82,6 @@ class Player:
             self.hitbox_size[0],
             self.hitbox_size[1]
         )
-
-    import math
 
     def move(self):
         """Update player movement while respecting map boundaries."""
@@ -322,7 +320,6 @@ class Player:
                 # Activate the ability
                 self.abilities[-1].active = True
 
-
     def apply_skill_upgrades(self, skills):
         """Update abilities based on skill upgrades."""
         for ability in self.abilities:
@@ -364,7 +361,7 @@ class Player:
                 expired_effects.append(name)
             elif effect["tick_interval"] and effect["tick_damage"]:
                 if current_time - effect["last_tick"] >= effect["tick_interval"] * 1000:
-                    self.health = max(0, self.health - effect["tick_damage"])
+                    self.health -= effect["tick_damage"]
                     hurt_sound.play()
                     effect["last_tick"] = current_time
 
@@ -387,8 +384,8 @@ class Player:
 
         # Calculate the starting position at the top-left corner
         margin = 10  # Margin from the screen edges
-        x = margin
-        y = margin  # Start from the top-left corner
+        x = screen.get_width() - frame_size - margin
+        y = screen.get_height() - frame_size - margin # Start from the top-left corner
 
         # Load frame images (do this once to avoid repeated loading)
         status_frame_image = pygame.image.load('./assets/images/status/debuff-frame-2.png')
@@ -432,10 +429,10 @@ class Player:
                     print(f"[DEBUG] Frame file not found for level {level}.")
 
                 # Adjust position for the next icon
-                x += frame_size + spacing
-                if x + frame_size > screen.get_width() - margin:
-                    x = margin
-                    y += frame_size + spacing
+                x -= frame_size + spacing  # Move left
+                if x - frame_size < margin:  # If there's no more space in the row
+                    x = screen.get_width() - frame_size - margin  # Reset to the right edge
+                    y -= frame_size + spacing  # Move upward
 
         # Draw stat upgrades
         for stat, count in self.stat_upgrades.items():
@@ -455,10 +452,10 @@ class Player:
                 frame = pygame.transform.scale(frame, (frame_size, frame_size))
                 screen.blit(frame, (x, y))
 
-                x += frame_size + spacing
-                if x + frame_size > screen.get_width() - margin:
-                    x = margin
-                    y += frame_size + spacing
+                x -= frame_size + spacing  # Move left
+                if x - frame_size < margin:  # If there's no more space in the row
+                    x = screen.get_width() - frame_size - margin  # Reset to the right edge
+                    y -= frame_size + spacing  # Move upward
 
             except FileNotFoundError:
                 print(f"[DEBUG] Missing icon or frame for stat {stat}, level {count}")
@@ -484,9 +481,9 @@ class Player:
             # Draw the icon inside the frame
             screen.blit(icon, (x + (frame_size - icon_size) // 2, y + (frame_size - icon_size) // 2))
             # Adjust position for the next icon
-            x += frame_size + spacing
+            x -= frame_size + spacing  # Move left
 
-            # If the row is full, move to the next line
-            if x + frame_size + spacing > screen.get_width() - margin:
-                x = margin
-                y += frame_size + spacing
+            # If the row is full, move to the row above
+            if x - frame_size < margin:  # If there's no more space in the row
+                x = screen.get_width() - frame_size - margin  # Reset to the right edge
+                y -= frame_size + spacing  # Move upward

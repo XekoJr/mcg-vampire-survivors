@@ -13,7 +13,7 @@ class BlobEnemy(Enemy):
         self.poison_duration = 10  # Poison lasts x seconds
         self.poison_tick_interval = 2  # Damage every x seconds
 
-    def attack_player(self, player):
+    def apply_poison(self, player):
         """Apply poison to the player if a collision occurs."""
         player.apply_status(
             "poison",

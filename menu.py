@@ -133,6 +133,7 @@ class Menu:
                     "max_level": 5,
                     "costs": [6, 7, 8, 9, 10],
                     "effect": "+0.5s Invincibility per level",
+                    "requires": [["burn_damage", 1]],
                     "achievement_required": "beat_Arcanos"
                 }
             },
@@ -239,7 +240,6 @@ class Menu:
                 # Update achievements if provided
                 if achievements:
                     data["achievements"] = achievements
-                    print("Achievements saved:", achievements)
                 
                 # Write updated data back to the file
                 f.seek(0)
@@ -563,7 +563,6 @@ class Menu:
         # Convert score to skill points
         new_skill_points = self.convert_score_to_skill_points(score)
         self.save_settings(achievements=achievements)
-        print("Achievements saved - game over:", achievements)
 
         # Update high score if necessary
         if score > self.high_score:
@@ -800,6 +799,8 @@ class Menu:
         main_menu_music.stop()  # Stop the main menu music
         skill_music.play(-1)  # Loop the skill tree music indefinitely
 
+        achievements = achievements or self.settings["achievements"]
+
         # Define skill tree layout (coordinates and connections)
         screen_width, screen_height = self.settings["resolution"]
         scale_factor_x = screen_width / 1280  # Based on default width
@@ -937,7 +938,7 @@ class Menu:
 
             # Check achievement requirements
             achievement_required = skill_data.get("achievement_required")
-            if achievement_required and not self.settings["achievements"].get(achievement_required, False):
+            if achievement_required and not achievements.get(achievement_required, False):
                 unmet_requirements.append(f"{achievement_required.replace('_', ' ').title()}")
                 can_unlock = False
 

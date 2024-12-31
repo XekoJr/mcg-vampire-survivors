@@ -8,7 +8,7 @@ import sys
 from settings import *
 from player import Player
 from enemy_manager import EnemyManager
-from enemies.boss_1_enemy import Boss1Enemy
+from enemies.__init__ import *
 from abilities.__init__ import *
 from projectile import *
 from xp import draw_xp_drops, xp_drops
@@ -144,6 +144,14 @@ def game_loop(player, enemy_manager, achievements):
                     player.last_damage_time = current_time  # Update the last damage time for invincibility
                     hurt_sound.play()
 
+                    player.apply_status(
+                        "burn", 
+                        3, 
+                        0.5, 
+                        5, 
+                        "Boss"
+                    )  # Apply burn status to the player
+
                     # Check if the player's health has reached 0 or below
                     if player.health <= 0:
                         death_sound.play()
@@ -201,6 +209,11 @@ def game_loop(player, enemy_manager, achievements):
 
         # Status and ability iconsd
         player.update_status_effects()
+        if player.health <= 0:
+            death_sound.play()
+            new_player, new_enemy_manager, achievements = reset_game()
+            menu.game_over_screen(player.score, new_enemy_manager, reset_game, game_loop, achievements)
+            return
         player.update_abilities_effects()
         player.draw_status_abilities_icons(screen)
 

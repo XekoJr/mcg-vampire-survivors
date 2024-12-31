@@ -10,13 +10,17 @@ class Boss1Enemy(Enemy):
         images = [
             pygame.image.load(f'./assets/images/enemies/boss_1/{i}.png') for i in range(26)
         ]
-        super().__init__(x, y, hp=5, speed=1, xp_value=30, damage=60, size=(150, 150), images=images)
+        super().__init__(x, y, hp=500, speed=1, xp_value=30, damage=40, size=(150, 150), images=images)
         self.shoot_interval = 2200  # Default interval between shots
         self.default_shoot_interval = 2200  # Save default interval for resetting
         self.first_shot_delay = 1500
         self.spawn_time = pygame.time.get_ticks()
         self.last_shot_time = pygame.time.get_ticks() + self.first_shot_delay
         self.shots_fired = 0  # Tracks how many shots have been fired in total
+
+        self.burn_damage = 5  # Damage per tick
+        self.burn_duration = 3  # Poison lasts x seconds
+        self.burn_tick_interval = 0.5  # Damage every x seconds
 
     def shoot_at_player(self, player):
         """Shoot a projectile towards a random location near the player's position."""

@@ -37,17 +37,31 @@ class EnemyManager:
         """Update the spawn interval based on the player's level."""
         self.spawn_interval = max(30, self.base_spawn_interval - (player_level * 5))
 
+    def add_enemy(self, enemy):
+        """Add a new enemy to the list."""
+        self.enemies.append(enemy)
+
     def spawn_enemy(self, player_level):
         """Spawn a new enemy or boss based on the player's level."""
         if player_level not in self.level_enemy_map:
             player_level = max(self.level_enemy_map.keys())  # Cap at highest level configuration
 
         # Ensure Boss1Enemy spawns at level 5
-        if player_level == 5:
+        if player_level == 5 or player_level == 15:
             if not any(isinstance(enemy, Boss1Enemy) for enemy in self.enemies):
                 if not self.boss_spawned:
                 # Spawn the boss in the center of the map
                     self.enemies.append(Boss1Enemy(MAP_WIDTH // 2, MAP_HEIGHT // 2))
+                    self.boss_spawned = True
+                    game_music.stop()
+                    boss_spawn_sound.play()
+                    boss_music.play(-1)
+
+        # Ensure Boss2Enemy spawns at level 10
+        if player_level == 10 or player_level == 20:
+            if not any(isinstance(enemy, Boss2Enemy) for enemy in self.enemies):
+                if not self.boss_spawned:
+                    self.enemies.append(Boss2Enemy(MAP_WIDTH // 2, MAP_HEIGHT // 2))
                     self.boss_spawned = True
                     game_music.stop()
                     boss_spawn_sound.play()
@@ -63,6 +77,7 @@ class EnemyManager:
             self.boss_spawned = False
         elif player_level == 16:
             self.spawn_interval = 35
+            self.boss_spawned = False
         else:
             self.update_spawn_interval(player_level)  # Update spawn interval based on level
 
@@ -111,8 +126,11 @@ class EnemyManager:
     def update_enemies(self, player_x, player_y, player, screen, camera_x, camera_y):
         """Update enemy positions and behaviors."""
         for enemy in self.enemies:
-            enemy.move_toward_player(player_x, player_y)
-            enemy.draw(screen, camera_x, camera_y, player)
+            if isinstance(enemy, Boss2Enemy):
+                enemy.update(player_x, player_y, self, (0, 0, MAP_WIDTH, MAP_HEIGHT))
+            else:
+                enemy.move_toward_player(player_x, player_y)
+                enemy.draw(screen, camera_x, camera_y, player)
 
     def draw_enemies(self, screen, camera_x, camera_y, player):
         """Draw all enemies."""
@@ -168,6 +186,9 @@ class EnemyManager:
                     player.last_damage_time = current_time  # Update last damage time
                     hurt_sound.play()  # Play the hurt sound effect
 
+                    if isinstance(enemy, BlobEnemy):
+                        enemy.apply_poison(player)
+
                     # Check if the player's health has reached 0 or below
                     if player.health <= 0:
                         death_sound.play()
@@ -200,7 +221,27 @@ class EnemyManager:
                 burning_ability.active = True
                 player.abilities.append(burning_ability)
                 ability_obtained_sound.play()
-                
+        
+        elif isinstance(enemy, Boss2Enemy):
+            player.score += 200
+            boss_death_sound.play()
+            boss_music.stop()
+            game_music.play(-1)
+
+            # Mark the achievement for beating Arcanos
+            if not achievements.get("beat_Arcanos", False):
+                achievements["beat_Arcanos"] = True
+                print(f"[DEBUG] Updated achievements: {achievements}")
+
+                # Save achievements via save_settings
+                save_settings(achievements=achievements)
+
+            # Equip the Poison Ability
+            if not any(isinstance(a, PoisonAbility) for a in player.abilities):
+                poison_ability = PoisonAbility()
+                poison_ability.active = True
+                player.abilities.append(poison_ability)
+                ability_obtained_sound.play()
 
         # Handle other enemy-specific logic
         elif isinstance(enemy, BlobEnemy):

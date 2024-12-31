@@ -14,8 +14,9 @@ class Enemy:
         self.damage =  damage
         self.size = size
         self.images = [pygame.transform.scale(img, self.size) for img in images]
-        self.animation_index = 0
-        self.animation_timer = 0
+        self.current_image_index = 0
+        self.animation_counter = 0
+        self.animation_speed = 10
 
     def move_toward_player(self, player_x, player_y):
         """Move the enemy toward the player."""
@@ -39,16 +40,16 @@ class Enemy:
     def draw(self, screen, camera_x, camera_y, player):
         """Draw the enemy and its HP bar."""
         # Update animation frame
-        self.animation_timer += 1
-        if self.animation_timer >= 10:
-            self.animation_index = (self.animation_index + 1) % len(self.images)
-            self.animation_timer = 0
+        self.animation_counter += 1
+        if self.animation_counter >= self.animation_speed:
+            self.animation_counter = 0
+            self.current_image_index = (self.current_image_index + 1) % len(self.images)
 
         # Determine if the enemy is to the right of the player
         flip_image = self.x > player.x
 
         # Flip the image if necessary
-        image_to_draw = pygame.transform.flip(self.images[self.animation_index], flip_image, False)
+        image_to_draw = pygame.transform.flip(self.images[self.current_image_index], flip_image, False)
 
         # Draw the enemy sprite
         screen.blit(image_to_draw, (
