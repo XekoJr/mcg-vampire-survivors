@@ -24,16 +24,19 @@ menu = Menu(screen)
 current_player = None
 current_enemy_manager = None
 
-def reset_game():
+def reset_game(achievements=None):
     """Reset the game state, including the player, enemies, projectiles, and abilities."""
     global current_player, current_enemy_manager
     projectiles.clear()
     xp_drops.clear()
 
+    settings = menu.load_settings()
+    if achievements is None:
+        achievements = settings.get("achievements", {})  # Use provided achievements if available
+
     # Reinitialize the player and enemy manager
     current_player = Player()
-    settings = menu.load_settings()
-    skills = settings.get('skills', {})
+    skills = settings.get("skills", {})
     current_player.initialize_abilities(skills)
     current_player.apply_skill_upgrades(skills)
     current_player.apply_stat_upgrades(skills)
@@ -41,7 +44,7 @@ def reset_game():
     current_enemy_manager = EnemyManager()
     current_enemy_manager.enemies.clear()
 
-    return current_player, current_enemy_manager
+    return current_player, current_enemy_manager, achievements
 
 def get_camera_offset(player):
     screen_width = pygame.display.get_surface().get_width()
@@ -52,7 +55,7 @@ def get_camera_offset(player):
 
     return offset_x, offset_y
 
-def game_loop(player, enemy_manager):
+def game_loop(player, enemy_manager, achievements):
     clock = pygame.time.Clock()
     boss_projectiles.clear()
     frame_count = 0
@@ -90,15 +93,15 @@ def game_loop(player, enemy_manager):
         move_projectiles()
         move_boss_projectiles()
 
-        # Handle enemy interactions
+        # Handle enemy interactionsa
         for enemy in enemy_manager.enemies:
             # Apply active abilities
             for ability in player.abilities:
                 if ability.active:
-                    if isinstance(ability, BurningAbility):
-                        ability.update_burn(enemy)
-                    elif isinstance(ability, ShieldAbility):
+                    if isinstance(ability, ShieldAbility):
                         ability.update() 
+                    elif isinstance(ability, BurningAbility):
+                        ability.update_burn(enemy)
                     elif isinstance(ability, HealingAbility):
                         ability.heal(player)
                     elif isinstance(ability, InvincibilityAbility):
@@ -125,43 +128,52 @@ def game_loop(player, enemy_manager):
             if player_rect.colliderect(projectile_rect):
                 # Check for active ShieldAbility
                 for ability in player.abilities:
-                    if isinstance(ability, ShieldAbility) and ability.active:
-                        if ability.block(player):
-                            block_hit_sound.play()
-                            boss_projectiles.remove(projectile)  # Remove the projectile since it was blocked
-                            return  # No further damage processing
+                    if isinstance(ability, ShieldAbility) and ability.block(player):
+                        block_hit_sound.play()
+                        boss_projectiles.remove(projectile)  # Remove the projectile since it was blocked
+                        break  # Exit the loop over `boss_projectiles` since the shield blocked the projectile
+                else:  # Shield didn't block, proceed with damage logic
+                    # Check for invincibility
+                    current_time = pygame.time.get_ticks()
+                    if current_time - player.last_damage_time < player.invincibility_time * 1000:
+                        boss_projectiles.remove(projectile)  # Remove the projectile without applying damage
+                        continue  # Skip further damage logic
 
-                # Check for invincibility
-                current_time = pygame.time.get_ticks()
-                if current_time - player.last_damage_time < player.invincibility_time * 1000:
-                    boss_projectiles.remove(projectile)  # Remove the projectile without applying damage
-                    return  # No further damage processing
+                    # Apply damage to the player
+                    player.health -= projectile['damage']
+                    player.last_damage_time = current_time  # Update the last damage time for invincibility
+                    hurt_sound.play()
 
-                # Apply damage to the player
-                player.health -= projectile['damage']
-                player.last_damage_time = current_time  # Update the last damage time for invincibility
-                hurt_sound.play()
+                    # Check if the player's health has reached 0 or below
+                    if player.health <= 0:
+                        death_sound.play()
+                        new_player, new_enemy_manager, achievements = reset_game(achievements=achievements)
+                        menu.game_over_screen(player.score, new_enemy_manager, reset_game, game_loop, achievements)
+                        return  # Exit the game loop
 
                 # Remove the projectile
-                boss_projectiles.remove(projectile)
+                if projectile in boss_projectiles:
+                    boss_projectiles.remove(projectile)
 
-                # Check if the player's health has reached 0 or below
-                if player.health <= 0:
-                    death_sound.play()
-                    new_player, new_enemy_manager = reset_game()
-                    menu.game_over_screen(player.score, new_enemy_manager, reset_game, game_loop)
-                    return
-
+            # Remove the projectile if it goes out of bounds
             if (projectile['x'] < 0 or projectile['x'] > MAP_WIDTH or
                     projectile['y'] < 0 or projectile['y'] > MAP_HEIGHT):
-                boss_projectiles.remove(projectile)
+                if projectile in boss_projectiles:
+                    boss_projectiles.remove(projectile)
 
         # Handle collisions
-        enemy_manager.handle_projectile_collisions(projectiles, player, xp_drops)
+        enemy_manager.handle_projectile_collisions(projectiles, player, xp_drops, achievements, menu.save_settings)
+        for enemy in enemy_manager.enemies[:]:
+            if enemy.is_dead():
+                achievements = enemy_manager.handle_enemy_defeat(enemy, player, xp_drops, achievements, menu.save_settings)
+
+        # Handle player collisions with enemies
         if enemy_manager.handle_player_collisions(player):
+            # Check if the player is dead
             if player.health <= 0:
-                new_player, new_enemy_manager = reset_game()
-                menu.game_over_screen(player.score, new_enemy_manager, reset_game, game_loop)
+                death_sound.play()
+                new_player, new_enemy_manager, achievements = reset_game()
+                menu.game_over_screen(player.score, new_enemy_manager, reset_game, game_loop, achievements)
                 return
 
         # Calculate background position
@@ -187,7 +199,7 @@ def game_loop(player, enemy_manager):
         player.draw_score(screen)
         player.draw_xp(screen)
 
-        # Status and ability icons
+        # Status and ability iconsd
         player.update_status_effects()
         player.update_abilities_effects()
         player.draw_status_abilities_icons(screen)
@@ -195,8 +207,6 @@ def game_loop(player, enemy_manager):
         pygame.display.flip()
         clock.tick(60)
 
-
 if __name__ == "__main__":
-    # Start the game with reset_game initialization
-    current_player, current_enemy_manager = reset_game()
-    menu.main_menu(current_player, current_enemy_manager, reset_game, game_loop)
+    current_player, current_enemy_manager, achievements = reset_game()
+    menu.main_menu(current_player, current_enemy_manager, reset_game, game_loop, achievements)

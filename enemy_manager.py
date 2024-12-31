@@ -1,3 +1,4 @@
+import json
 import pygame
 from enemies.__init__ import *
 from abilities.__init__ import *
@@ -119,7 +120,7 @@ class EnemyManager:
             enemy.draw(screen, camera_x, camera_y, player)
 
     # Handle damage and collision logic
-    def handle_projectile_collisions(self, projectiles, player, xp_drops):
+    def handle_projectile_collisions(self, projectiles, player, xp_drops, achievements, save_settings):
         """Check for collisions between projectiles and enemies."""
         for projectile in projectiles[:]:
             projectile_rect = pygame.Rect(projectile['x'], projectile['y'], 10, 10)
@@ -136,39 +137,13 @@ class EnemyManager:
                     for ability in player.abilities:
                         if isinstance(ability, BurningAbility) and ability.active:
                             ability.apply_burn(enemy)
-                        """
-                        if isinstance(ability, PoisonAbility) and ability.active:
-                            ability.poison(enemy)
-                        """
-                        
-                    if enemy.take_damage(projectile['damage']): # Check if the enemy is dead
 
-                        # Check if the enemy is a boss
-                        if isinstance(enemy, Boss1Enemy):
-                            # Play the boss death sound
-                            player.score += 100
-                            boss_death_sound.play()
-                            boss_music.stop()
-                            game_music.play(-1)
-                        elif isinstance(enemy, BlobEnemy):
-                            # Play the blob death sound
-                            player.score += 15
-                            blob_death_sound.play()
-                        elif isinstance(enemy, SkeletonEnemy):
-                            # Play the skeleton death sound
-                            player.score += 10
-                            skeleton_death_sound.play()
-                        elif isinstance(enemy, BatEnemy):
-                            # Play the bat death sound
-                            player.score += 5
-                            bat_death_sound.play()                    
-
-                        self.enemies.remove(enemy)
-                        xp_drops.append({
-                            'x': enemy.x, 
-                            'y': enemy.y,
-                            'value': enemy.xp_value  # XP value depends on the enemy
-                            })  # Drop XP
+                    # Check if the enemy is dead
+                    if enemy.take_damage(projectile['damage']):
+                        # Pass `save_settings` to `handle_enemy_defeat`
+                        self.handle_enemy_defeat(enemy, player, xp_drops, achievements, save_settings)
+                    
+                    # Remove the projectile after collision
                     projectiles.remove(projectile)
                     break
 
@@ -177,44 +152,71 @@ class EnemyManager:
         player_rect = pygame.Rect(player.x, player.y, player.size, player.size)
         current_time = pygame.time.get_ticks()
 
-        for enemy in self.enemies:
+        for enemy in self.enemies[:]:
             if player_rect.colliderect(enemy.get_rect()):
                 # Check if enough time has passed since the player was last damaged
                 if current_time - player.last_damage_time >= player.invincibility_time * 1000:
                     
                     # Check for active ShieldAbility
                     for ability in player.abilities:
-                        if isinstance(ability, ShieldAbility) and ability.active:
-                            if ability.block(player):
-                                block_hit_sound.play()
-                                return True  # Damage was blocked
+                        if isinstance(ability, ShieldAbility) and ability.block(player):
+                            block_hit_sound.play()
+                            return False  # Collision detected but damage was blocked
 
                     # Apply damage to the player
                     player.health -= enemy.damage
                     player.last_damage_time = current_time  # Update last damage time
                     hurt_sound.play()  # Play the hurt sound effect
 
-                    # Apply damage to the enemy
-                    enemy.hp -= player.projectile_damage  # Reduce enemy HP
-
-                    if enemy.hp <= 0:
-                        self.enemies.remove(enemy)  # Remove the enemy if its HP drops to 0 or below
-                        player.score += enemy.xp_value
-
-                    # Apply additional effects for specific enemies
-                    if isinstance(enemy, BlobEnemy):
-                        enemy.attack_player(player)  # Apply poison effect
-
-                    # Apply invincibility extension
-                    for ability in player.abilities:
-                        if isinstance(ability, InvincibilityAbility) and ability.active:
-                            ability.apply_invincibility(player)
-
                     # Check if the player's health has reached 0 or below
                     if player.health <= 0:
                         death_sound.play()
                         return True  # Player is dead
 
-                return True  # Collision detected
+                return False  # Collision detected but no damage applied
 
         return False  # No collision
+
+    def handle_enemy_defeat(self, enemy, player, xp_drops, achievements, save_settings):
+        """Handle the logic when an enemy is defeated."""
+        # Handle boss defeat logic
+        if isinstance(enemy, Boss1Enemy):
+            player.score += 100
+            boss_death_sound.play()
+            boss_music.stop()
+            game_music.play(-1)
+
+            # Mark the achievement for beating Pyraxis
+            if not achievements.get("beat_Pyraxis", False):
+                achievements["beat_Pyraxis"] = True
+                print(f"[DEBUG] Updated achievements: {achievements}")
+
+                # Save achievements via save_settings
+                save_settings(achievements=achievements)
+
+            # Equip the Burning Ability
+            if not any(isinstance(a, BurningAbility) for a in player.abilities):
+                burning_ability = BurningAbility()
+                burning_ability.active = True
+                player.abilities.append(burning_ability)
+                ability_obtained_sound.play()
+                
+
+        # Handle other enemy-specific logic
+        elif isinstance(enemy, BlobEnemy):
+            player.score += 15
+            blob_death_sound.play()
+        elif isinstance(enemy, SkeletonEnemy):
+            player.score += 10
+            skeleton_death_sound.play()
+        elif isinstance(enemy, BatEnemy):
+            player.score += 5
+            bat_death_sound.play()
+
+        # Remove the enemy and drop XP
+        self.enemies.remove(enemy)
+        xp_drops.append({
+            'x': enemy.x,
+            'y': enemy.y,
+            'value': enemy.xp_value
+        })

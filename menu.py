@@ -223,7 +223,7 @@ class Menu:
 
         return settings
 
-    def save_settings(self):
+    def save_settings(self, achievements=None):
         """Save the settings to the utils.json file."""
         try:
             with open(self.settings_file, "r+") as f:
@@ -231,19 +231,25 @@ class Menu:
                     data = json.load(f)
                 except json.JSONDecodeError:
                     data = {}
-                # Update or initialize keys
+                # Update settings
                 data.update(self.settings)
                 data["resolution"] = self.settings.get("resolution", (1366, 768))
                 data["high_score"] = max(data.get("high_score", 0), self.high_score)  # Keep the highest score
-                # Write back to the file
+                
+                # Update achievements if provided
+                if achievements:
+                    data["achievements"] = achievements
+                    print("Achievements saved:", achievements)
+                
+                # Write updated data back to the file
                 f.seek(0)
                 json.dump(data, f, indent=4)
                 f.truncate()
-            self.menu_background = self.load_menu_background()
+            self.menu_background = self.load_menu_background()  # Reload the background image
         except FileNotFoundError:
             with open(self.settings_file, "w") as f:
                 json.dump(self.settings, f, indent=4)
-        
+                
     def save_high_score(self, score):
         try:
             with open(self.settings_file, "r+") as f:
@@ -256,7 +262,7 @@ class Menu:
             with open(self.settings_file, "w") as f:
                 json.dump({"high_score": score}, f, indent=4)
 
-    def main_menu(self, player, enemy_manager, reset_game, game_loop):
+    def main_menu(self, player, enemy_manager, reset_game, game_loop, achievements):
         """Displays the main menu."""
 
         main_menu_music.play(-1)  # Loop the music indefinitely
@@ -360,20 +366,20 @@ class Menu:
                         running = False
                     elif skill_tree_hovered:
                         # Open the skill tree menu
-                        self.skill_tree_menu(player)
+                        self.skill_tree_menu(player, achievements=achievements)
                     elif settings_hovered:
                         # Open the settings menu
                         self.settings_menu()
                     elif quit_hovered:
                         # Quit the game
-                        self.save_settings()
+                        self.save_settings(achievements=achievements)
                         pygame.quit()
                         sys.exit()
 
             pygame.display.flip()
 
-        reset_game()
-        game_loop(player, enemy_manager)
+        reset_game(achievements=achievements)
+        game_loop(player, enemy_manager, achievements)
 
     def settings_menu(self):
         """Displays the settings menu."""
@@ -545,8 +551,8 @@ class Menu:
 
         return skill_points_earned
 
-    def game_over_screen(self, score, enemy_manager, reset_game, game_loop):
-        """Display the Game Over screen."""
+    def game_over_screen(self, score, enemy_manager, reset_game, game_loop, achievements):
+        """Display the Game Over screen and save achievements."""
         
         # Stop the game music
         game_music.stop()
@@ -556,6 +562,8 @@ class Menu:
 
         # Convert score to skill points
         new_skill_points = self.convert_score_to_skill_points(score)
+        self.save_settings(achievements=achievements)
+        print("Achievements saved - game over:", achievements)
 
         # Update high score if necessary
         if score > self.high_score:
@@ -580,7 +588,7 @@ class Menu:
             score_text = font_score.render(f"Final Score: {score}", True, WHITE)
             self.screen.blit(score_text, 
                             (screen_width // 2 - score_text.get_width() // 2, screen_height // 4 + 80))
-            
+
             # Display New Skill Points
             skill_points_text = font_score.render(f"New Skill Points: {new_skill_points}", True, WHITE)
             self.screen.blit(skill_points_text, 
@@ -632,20 +640,19 @@ class Menu:
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # Restart Button
-                    # Game Over Screen: Restart Button
                     if restart_hovered:
                         click_sound.play()  # Play click sound
-                        current_player, current_enemy_manager = reset_game()  # Reset game and get new instances
+                        current_player, current_enemy_manager, achievements = reset_game(achievements)
                         running = False
-                        game_loop(current_player, current_enemy_manager)  # Start a new game loop
+                        game_loop(current_player, current_enemy_manager, achievements)  # Start a new game loop
                         return
 
                     # Main Menu Button
                     if menu_hovered:
                         click_sound.play()  # Play click sound
                         running = False
-                        current_player, current_enemy_manager = reset_game()  # Reset game for main menu
-                        self.main_menu(current_player, current_enemy_manager, reset_game, game_loop)  # Go to main menu
+                        current_player, current_enemy_manager, achievements = reset_game(achievements)
+                        self.main_menu(current_player, current_enemy_manager, reset_game, game_loop, achievements)
                         return
 
             pygame.display.flip()
@@ -784,7 +791,7 @@ class Menu:
         return True
 
 
-    def skill_tree_menu(self, player):
+    def skill_tree_menu(self, player, achievements=None):
         """Display the skill tree and handle interactions."""
         running = True
         selected_skill = None  # Currently selected skill for the right panel
@@ -856,7 +863,7 @@ class Menu:
                         can_unlock = False
 
                 achievement = skill_data.get("achievement_required")
-                if achievement and not self.settings["achievements"].get(achievement, False):
+                if achievement and not achievements.get(achievement, False):
                     can_unlock = False
 
                 # Load skill icon and frame or locked icon
@@ -1046,7 +1053,7 @@ class Menu:
                         click_sound.play()
                         skill_music.stop()
                         main_menu_music.play(-1)
-                        player.apply_sill_upgrades(self.settings["skills"])
+                        player.apply_skill_upgrades(self.settings["skills"])
                         player.apply_stat_upgrades(self.settings["skills"])
                         running = False
                         

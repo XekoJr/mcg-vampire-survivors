@@ -32,6 +32,9 @@ class Enemy:
         """Reduce health and return True if the enemy dies."""
         self.hp -= damage
         return self.hp <= 0
+    
+    def is_dead(self):
+        return self.hp <= 0
 
     def draw(self, screen, camera_x, camera_y, player):
         """Draw the enemy and its HP bar."""

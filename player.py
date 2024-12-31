@@ -13,7 +13,7 @@ class Player:
         self.health = 40
         self.max_health = 40
         self.xp = 0  # Total XP collected
-        self.level = 1  # Starting level
+        self.level = 5  # Starting level
         self.current_xp = 0  # XP toward the next level
         self.xp_to_next_level = 50  # Initial XP required to level up
         self.last_shot_time = 0
@@ -33,6 +33,7 @@ class Player:
         self.base_crit_damage = 1.5
 
         self.base_invincibility_time = 0.35  # Default invincibility duration in seconds
+        self.stat_upgrades = {}  # Track stat upgrades
 
         # Hitbox configuration
         self.hitbox_offset = (10, 10)  # Offset from the sprite's top-left corner
@@ -144,6 +145,17 @@ class Player:
 
     def apply_upgrade(self, upgrade):
         """Apply the chosen upgrade."""
+        if not hasattr(self, "stat_upgrades"):
+            self.stat_upgrades = {}  # Initialize the dictionary if not present
+
+        # Initialize or increment the upgrade count
+        if upgrade in self.stat_upgrades:
+            if self.stat_upgrades[upgrade] >= 6:
+                return  # Ignore the upgrade if it's already at the max level
+            self.stat_upgrades[upgrade] += 1
+        else:
+            self.stat_upgrades[upgrade] = 1
+
         if upgrade == "fire_rate":
             self.fire_rate = max(200, self.fire_rate * 0.8)  # Faster shooting
         elif upgrade == "damage":
@@ -156,7 +168,7 @@ class Player:
         elif upgrade == "speed":
             self.speed += 0.15  # Increase movement speed
         elif upgrade == "crit_chance":
-            self.crit_chance = min(100, self.crit_chance + 5)  # Increase crit chance (cap at 100%)
+            self.crit_chance = min(200, self.crit_chance + 5)  # Increase crit chance (cap at 200%)
 
     def draw(self, screen):
         """Draw the player's current animation frame on the screen."""
@@ -306,14 +318,10 @@ class Player:
                     self.abilities.append(ShieldAbility())
                 elif skill_name == "invincibility":
                     self.abilities.append(InvincibilityAbility())
-                elif skill_name in ["burn_damage", "burn_duration"]:
-                    # Handle BurningAbility
-                    burning_ability = next((a for a in self.abilities if isinstance(a, BurningAbility)), None)
-                    if not burning_ability:
-                        burning_ability = BurningAbility()
-                        self.abilities.append(burning_ability)
+                
                 # Activate the ability
                 self.abilities[-1].active = True
+
 
     def apply_skill_upgrades(self, skills):
         """Update abilities based on skill upgrades."""
@@ -428,6 +436,32 @@ class Player:
                 if x + frame_size > screen.get_width() - margin:
                     x = margin
                     y += frame_size + spacing
+
+        # Draw stat upgrades
+        for stat, count in self.stat_upgrades.items():
+            if count > 6:
+                continue  # Skip displaying stats that have reached the maximum level
+
+            icon_path = f'./assets/images/stats/{stat}.png'
+            try:
+                # Load the icon for the stat
+                icon = pygame.image.load(icon_path)
+                icon = pygame.transform.scale(icon, (icon_size, icon_size))
+                screen.blit(icon, (x + (frame_size - icon_size) // 2, y + (frame_size - icon_size) // 2))
+
+                # Draw a frame corresponding to the stat level
+                frame_path = f'./assets/images/stats/stats-frame-{count}.png'
+                frame = pygame.image.load(frame_path)
+                frame = pygame.transform.scale(frame, (frame_size, frame_size))
+                screen.blit(frame, (x, y))
+
+                x += frame_size + spacing
+                if x + frame_size > screen.get_width() - margin:
+                    x = margin
+                    y += frame_size + spacing
+
+            except FileNotFoundError:
+                print(f"[DEBUG] Missing icon or frame for stat {stat}, level {count}")
 
         # Add active status effects to the list
         for status_name, status_data in self.status_effects.items():
