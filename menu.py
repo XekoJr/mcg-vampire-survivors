@@ -1,4 +1,5 @@
 import json
+import os
 import pygame
 import sys
 import random
@@ -523,6 +524,20 @@ class Menu:
                 back_button_y + (back_button_height - back_text.get_height()) // 2
             ))
 
+            # Reset Button
+            reset_button_width, reset_button_height = 150, 50
+            reset_button_x = self.screen.get_width() - reset_button_width - 20
+            reset_button_y = self.screen.get_height() - reset_button_height - 20
+            reset_hovered = reset_button_x < mouse_x < reset_button_x + reset_button_width and \
+                            reset_button_y < mouse_y < reset_button_y + reset_button_height
+            reset_button_color = DARK_RED if reset_hovered else RED
+            pygame.draw.rect(self.screen, reset_button_color, (reset_button_x, reset_button_y, reset_button_width, reset_button_height))
+            reset_text = font_button.render("Reset", True, WHITE)
+            self.screen.blit(reset_text, (
+                reset_button_x + (reset_button_width - reset_text.get_width()) // 2,
+                reset_button_y + (reset_button_height - reset_text.get_height()) // 2
+            ))
+
             # Play hover sound for the Back button
             if back_hovered and hovered_button != "back":
                 hover_sound.play()
@@ -540,6 +555,14 @@ class Menu:
                         click_sound.play()  # Play click sound
                         self.save_settings()
                         running = False
+                    elif reset_hovered:
+                        click_sound.play()
+                        try:
+                            os.remove("utils.json")
+                            print("[DEBUG] utils.json file deleted successfully.")
+                        except FileNotFoundError:
+                            print("[DEBUG] utils.json file not found.")
+                        self.settings = self.load_settings()
 
             pygame.display.flip()
 
@@ -550,6 +573,81 @@ class Menu:
         self.save_settings()
 
         return skill_points_earned
+
+    def pause_menu(self, reset_game, game_loop, achievements):
+        """Displays the pause menu."""
+        paused = True
+
+        while paused:
+            self.screen.fill(BLACK)
+
+            # Get mouse position
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+
+            # Title
+            title_text = font_button.render("Paused", True, WHITE)
+            self.screen.blit(title_text, (
+                (self.screen.get_width() - title_text.get_width()) // 2,
+                150
+            ))
+
+            # Continue Button
+            continue_button_width, continue_button_height = 200, 50
+            continue_button_x = (self.screen.get_width() - continue_button_width) // 2
+            continue_button_y = 300
+            continue_hovered = continue_button_x < mouse_x < continue_button_x + continue_button_width and \
+                            continue_button_y < mouse_y < continue_button_y + continue_button_height
+            continue_button_color = DARK_RED if continue_hovered else RED
+            pygame.draw.rect(self.screen, continue_button_color, (continue_button_x, continue_button_y, continue_button_width, continue_button_height))
+            continue_text = font_button.render("Continue", True, WHITE)
+            self.screen.blit(continue_text, (
+                continue_button_x + (continue_button_width - continue_text.get_width()) // 2,
+                continue_button_y + (continue_button_height - continue_text.get_height()) // 2
+            ))
+
+            # Return to Menu Button
+            return_button_width, return_button_height = 200, 50
+            return_button_x = (self.screen.get_width() - return_button_width) // 2
+            return_button_y = 400
+            return_hovered = return_button_x < mouse_x < return_button_x + return_button_width and \
+                            return_button_y < mouse_y < return_button_y + return_button_height
+            return_button_color = DARK_RED if return_hovered else RED
+            pygame.draw.rect(self.screen, return_button_color, (return_button_x, return_button_y, return_button_width, return_button_height))
+            return_text = font_button.render("Return to Menu", True, WHITE)
+            self.screen.blit(return_text, (
+                return_button_x + (return_button_width - return_text.get_width()) // 2,
+                return_button_y + (return_button_height - return_text.get_height()) // 2
+            ))
+
+            # Event Handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if continue_hovered:
+                        click_sound.play()
+                        paused = False  # Resume the game
+                    # Main Menu Button
+                    elif return_hovered:
+                        click_sound.play()  # Play click sound
+                        game_music.stop()
+                        boss_music.stop()
+                        main_menu_music.play(-1)
+                        running = False
+                        current_player, current_enemy_manager, achievements = reset_game(achievements)
+                        self.main_menu(current_player, current_enemy_manager, reset_game, game_loop, achievements)
+                        return
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    click_sound.play()
+                    game_music.stop()
+                    boss_music.stop()
+                    paused = False  # Resume the game if "Esc" is pressed again
+
+            # Update the display
+            pygame.display.flip()
+
+        return False  # Continue the game
 
     def game_over_screen(self, score, enemy_manager, reset_game, game_loop, achievements):
         """Display the Game Over screen and save achievements."""

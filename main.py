@@ -73,6 +73,12 @@ def game_loop(player, enemy_manager, achievements):
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                # Pause the game and display the pause menu
+                return_to_menu = menu.pause_menu(reset_game=reset_game, game_loop=game_loop, achievements=achievements)
+                if return_to_menu:
+                    # Return to the main menu
+                    return
 
         # Player movement and shooting
         player.move()
