@@ -9,7 +9,7 @@ MAP_HEIGHT = 3000
 
 try:
     # Load the background image
-    background_image = pygame.image.load('./assets/images/background/vede.jpg')
+    background_image = pygame.image.load('./assets/images/background/background-ingame-final.png')
 except pygame.error as e:
     #grey background if image not found
     print(f"Error loading background image: {e}")

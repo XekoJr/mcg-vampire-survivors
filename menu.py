@@ -1056,6 +1056,7 @@ class Menu:
                         main_menu_music.play(-1)
                         player.apply_skill_upgrades(self.settings["skills"])
                         player.apply_stat_upgrades(self.settings["skills"])
+                        player.initialize_abilities(self.settings["skills"])
                         running = False
                         
 

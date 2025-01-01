@@ -60,8 +60,6 @@ def game_loop(player, enemy_manager, achievements):
     boss_projectiles.clear()
     frame_count = 0
 
-    reset_game()
-
     # Music management
     main_menu_music.stop()
     game_music.play(-1)

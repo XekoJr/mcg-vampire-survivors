@@ -15,7 +15,7 @@ class Player:
         self.xp = 0  # Total XP collected
         self.level = 1  # Starting level
         self.current_xp = 0  # XP toward the next level
-        self.xp_to_next_level = 50  # Initial XP required to level up
+        self.xp_to_next_level = 75  # Initial XP required to level up
         self.last_shot_time = 0
         self.score = 0
         self.level_up_pending = False
@@ -231,7 +231,7 @@ class Player:
         screen.blit(score_text, (score_x, 25))
 
     def draw_xp(self, screen):
-        """Draw XP bar at the top-center of the screen."""
+        """Draw XP bar at the top-center of the screen with the player's level in the middle."""
         # Load the XP bar images (ensure these are loaded only once)
         if not hasattr(self, 'xp_bar_background'):
             self.xp_bar_background = pygame.image.load('./assets/images/xp/xp-bar.png')
@@ -256,7 +256,7 @@ class Player:
         xp_percentage = self.current_xp / self.xp_to_next_level
         green_bar_width = int(max_green_width * xp_percentage)
 
-        # Resize the green bar with adjusted height 
+        # Resize the green bar with adjusted height
         green_bar_height = int(scaled_height * 0.475)  # Make the green bar 50% of the background's height
         xp_bar_green_scaled = pygame.transform.scale(self.xp_bar_green, (green_bar_width, green_bar_height))
 
@@ -273,6 +273,17 @@ class Player:
 
         # Draw the green bar on top, respecting the margin
         screen.blit(xp_bar_green_scaled, (bar_x + green_bar_margin, green_bar_y))
+
+        # Render the player's level in the middle of the XP bar
+        level_text = font_credit.render(str(self.level), True, WHITE)  # Use the player's level
+        text_width, text_height = level_text.get_size()
+
+        # Center the text within the background bar
+        text_x = bar_x + (scaled_width - text_width) // 2
+        text_y = bar_y + (scaled_height - text_height) // 2
+
+        # Draw the level text
+        screen.blit(level_text, (text_x, text_y))
 
     def draw_with_offset(self, screen, camera_x, camera_y):
         """Draw player with camera offset."""
