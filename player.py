@@ -13,7 +13,7 @@ class Player:
         self.health = 40
         self.max_health = 40
         self.xp = 0  # Total XP collected
-        self.level = 1  # Starting level
+        self.level = 5  # Starting level
         self.current_xp = 0  # XP toward the next level
         self.xp_to_next_level = 75  # Initial XP required to level up
         self.last_shot_time = 0
@@ -487,10 +487,10 @@ class Player:
 
         # Draw icons in the unified order
         for item_type, item_name, icon, frame_image in icons_to_draw:
-            # Draw the frame
-            screen.blit(frame_image, (x, y))
             # Draw the icon inside the frame
             screen.blit(icon, (x + (frame_size - icon_size) // 2, y + (frame_size - icon_size) // 2))
+            # Draw the frame
+            screen.blit(frame_image, (x, y))
             # Adjust position for the next icon
             x -= frame_size + spacing  # Move left
 

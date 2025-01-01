@@ -1056,9 +1056,9 @@ class Menu:
                         main_menu_music.play(-1)
                         player.apply_skill_upgrades(self.settings["skills"])
                         player.apply_stat_upgrades(self.settings["skills"])
+                        player.abilities = []
                         player.initialize_abilities(self.settings["skills"])
                         running = False
-                        
 
                     # Handle upgrade button click
                     if upgrade_button and upgrade_button.collidepoint(mouse_x, mouse_y):
