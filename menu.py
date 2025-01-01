@@ -633,7 +633,6 @@ class Menu:
                         click_sound.play()  # Play click sound
                         game_music.stop()
                         boss_music.stop()
-                        main_menu_music.play(-1)
                         running = False
                         current_player, current_enemy_manager, achievements = reset_game(achievements)
                         self.main_menu(current_player, current_enemy_manager, reset_game, game_loop, achievements)
