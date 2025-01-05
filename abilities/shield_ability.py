@@ -16,7 +16,7 @@ class ShieldAbility(Ability):
         self.cooldown = 30  # Cooldown duration in seconds
         self.last_block_time = None  # Tracks the last time the ability blocked an attack
 
-    def block(self, player):
+    def block(self):
         """Block one attack and deactivate the ability."""
         if self.active and self.ready:
             self.blocked = True

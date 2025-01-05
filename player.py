@@ -54,11 +54,8 @@ class Player:
         # Animation control variables
         self.animation_index = 0
         self.animation_timer = 0  # Timer to control image switching
-
         # Initialize player direction (default "down")
         self.direction = 'down'
-        self.animation_index = 0
-
         self.current_image = self.player_images[self.direction][self.animation_index]  # Initial image
         self.last_move_time = time.time()  # Time tracking for animations
 

@@ -81,8 +81,8 @@ try:
     death_sound = pygame.mixer.Sound('./assets/audio/death/player-death.wav')
         
         # Ability sounds
-    ability_obtained_sound = pygame.mixer.Sound('./assets/audio/ability-obtained.wav') #todo
-    ability_used_sound = pygame.mixer.Sound('./assets/audio/ability-used.wav')         #todo
+    ability_obtained_sound = pygame.mixer.Sound('./assets/audio/ability-obtained.wav')
+    ability_used_sound = pygame.mixer.Sound('./assets/audio/ability-used.wav')         
 
         # Enemy sounds
     bat_death_sound = pygame.mixer.Sound('./assets/audio/death/bat-death.wav')

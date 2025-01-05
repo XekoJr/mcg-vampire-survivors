@@ -110,6 +110,8 @@ def game_loop(player, enemy_manager, achievements):
                         ability.heal(player)
                     elif isinstance(ability, InvincibilityAbility):
                         ability.apply_invincibility(player)
+                    elif isinstance(ability, PoisonAbility):
+                        ability.update_poison(enemy)
 
             # Boss-specific behavior
             if isinstance(enemy, Boss1Enemy):
@@ -132,7 +134,7 @@ def game_loop(player, enemy_manager, achievements):
             if player_rect.colliderect(projectile_rect):
                 # Check for active ShieldAbility
                 for ability in player.abilities:
-                    if isinstance(ability, ShieldAbility) and ability.block(player):
+                    if isinstance(ability, ShieldAbility) and ability.block():
                         block_hit_sound.play()
                         boss_projectiles.remove(projectile)  # Remove the projectile since it was blocked
                         break  # Exit the loop over `boss_projectiles` since the shield blocked the projectile

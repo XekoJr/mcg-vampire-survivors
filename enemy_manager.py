@@ -47,7 +47,7 @@ class EnemyManager:
             player_level = max(self.level_enemy_map.keys())  # Cap at highest level configuration
 
         # Ensure Boss1Enemy spawns at level 5
-        if player_level == 5 or player_level == 15:
+        if player_level == 5:
             if not any(isinstance(enemy, Boss1Enemy) for enemy in self.enemies):
                 if not self.boss_spawned:
                 # Spawn the boss in the center of the map
@@ -58,7 +58,7 @@ class EnemyManager:
                     boss_music.play(-1)
 
         # Ensure Boss2Enemy spawns at level 10
-        if player_level == 10 or player_level == 20:
+        if player_level == 10:
             if not any(isinstance(enemy, Boss2Enemy) for enemy in self.enemies):
                 if not self.boss_spawned:
                     self.enemies.append(Boss2Enemy(MAP_WIDTH // 2, MAP_HEIGHT // 2))
@@ -67,7 +67,7 @@ class EnemyManager:
                     boss_spawn_sound.play()
                     boss_music.play(-1)
 
-        if player_level in [5, 10, 15]:
+        if player_level in [5, 10]:
             self.spawn_interval = 170  # Set a defined spawn interval for boss levels
         elif player_level == 6:
             self.spawn_interval = 105  # Set a defined spawn interval for level 6
@@ -77,7 +77,6 @@ class EnemyManager:
             self.boss_spawned = False
         elif player_level == 16:
             self.spawn_interval = 35
-            self.boss_spawned = False
         else:
             self.update_spawn_interval(player_level)  # Update spawn interval based on level
 
@@ -156,6 +155,10 @@ class EnemyManager:
                         if isinstance(ability, BurningAbility) and ability.active:
                             ability.apply_burn(enemy)
 
+                    for ability in player.abilities:
+                        if isinstance(ability, PoisonAbility) and ability.active:
+                            ability.apply_poison(enemy)
+
                     # Check if the enemy is dead
                     if enemy.take_damage(projectile['damage']):
                         # Pass `save_settings` to `handle_enemy_defeat`
@@ -177,7 +180,7 @@ class EnemyManager:
                     
                     # Check for active ShieldAbility
                     for ability in player.abilities:
-                        if isinstance(ability, ShieldAbility) and ability.block(player):
+                        if isinstance(ability, ShieldAbility) and ability.block():
                             block_hit_sound.play()
                             return False  # Collision detected but damage was blocked
 
@@ -229,7 +232,7 @@ class EnemyManager:
             game_music.play(-1)
 
             # Mark the achievement for beating Arcanos
-            if not achievements.get("beat_Arcanos", False):
+            if not achievements.get("beat_Arcanos", True):
                 achievements["beat_Arcanos"] = True
                 print(f"[DEBUG] Updated achievements: {achievements}")
 

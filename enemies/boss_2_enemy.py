@@ -51,7 +51,7 @@ class Boss2Enemy(Enemy):
         self.x = max(playable_area[0], min(self.x, playable_area[2]))
         self.y = max(playable_area[1], min(self.y, playable_area[3]))
 
-    def spawn_skeletons(self, enemy_manager, player_x, player_y):
+    def spawn_skeletons(self, enemy_manager):
         """Spawns skeleton enemies around the player."""
         if self.first_attack_delay > 0:
             self.first_attack_delay -= 1  # Count down the first attack delay
@@ -71,4 +71,4 @@ class Boss2Enemy(Enemy):
     def update(self, player_x, player_y, enemy_manager, playable_area):
         """Update Arcanos' behavior."""
         self.move_relative_to_player(player_x, player_y, playable_area)
-        self.spawn_skeletons(enemy_manager, player_x, player_y)
+        self.spawn_skeletons(enemy_manager)
