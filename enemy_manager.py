@@ -232,7 +232,7 @@ class EnemyManager:
             game_music.play(-1)
 
             # Mark the achievement for beating Arcanos
-            if not achievements.get("beat_Arcanos", True):
+            if not achievements.get("beat_Arcanos", False):
                 achievements["beat_Arcanos"] = True
                 print(f"[DEBUG] Updated achievements: {achievements}")
 

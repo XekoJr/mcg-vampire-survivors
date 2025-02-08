@@ -33,9 +33,6 @@ button_width, button_height = 200, 50
 button_x = (WIDTH - button_width) // 2
 button_y = HEIGHT // 2
 
-# Enemy settings
-ENEMY_SIZE = (50, 40)  # Width and height of the enemy
-
 # Game settings
 player_speed = 2 # Speed of the player character
 projectile_speed = 7 # Speed of player projectiles

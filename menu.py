@@ -134,7 +134,7 @@ class Menu:
                     "max_level": 5,
                     "costs": [6, 7, 8, 9, 10],
                     "effect": "+0.5s Invincibility per level",
-                    "requires": [["burn_damage", 1]],
+                    "requires": [["burn_duration", 1]],
                     "achievement_required": "beat_Arcanos"
                 }
             },

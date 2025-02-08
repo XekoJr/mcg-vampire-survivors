@@ -13,7 +13,7 @@ class Player:
         self.health = 40
         self.max_health = 40
         self.xp = 0  # Total XP collected
-        self.level = 5  # Starting level
+        self.level = 1  # Starting level
         self.current_xp = 0  # XP toward the next level
         self.xp_to_next_level = 75  # Initial XP required to level up
         self.last_shot_time = 0
