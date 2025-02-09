@@ -22,7 +22,7 @@ The longer you survive, the more chaotic the battlefield becomes—can you outla
 
 ✔ Skill Tree to unlock and upgrade abilities and base stats
 
-✔ Unique Bosses 🎲
+✔ Unique Bosses
 
 
 Can you survive the night? 🌙🔥
